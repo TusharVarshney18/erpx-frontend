@@ -83,7 +83,13 @@ function AuthPage() {
         organizationCode: orgCode,
       });
       if (result.requiresEmailVerification) {
-        toast.success("Account created. Check your inbox for a verification code.");
+        if (result.deliveredVia === "console") {
+          toast.error(
+            "Account created, but the verification email could not be sent (SMTP is not configured).",
+          );
+        } else {
+          toast.success("Account created. Check your inbox for a verification code.");
+        }
         nav({ to: "/verify-email", search: { email } });
       } else {
         toast.success("Account created. Welcome!");

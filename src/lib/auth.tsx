@@ -107,6 +107,7 @@ type SignUpResult = {
   requiresEmailVerification: boolean;
   email: string;
   maskedEmail?: string;
+  deliveredVia?: string;
 };
 
 type SwitchOrgResponse = {
@@ -301,6 +302,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           requiresEmailVerification: true,
           email: input.email,
           maskedEmail: data.verification?.maskedEmail,
+          deliveredVia: data.verification?.deliveredVia,
         };
       }
       await signIn(input.email, input.password);

@@ -33,7 +33,13 @@ function AcceptInvitePage() {
       const res = await resendInvite(email);
       setMasked(res.maskedEmail);
       setStep("code");
-      toast.success(`We sent a code to ${res.maskedEmail}`);
+      if (res.deliveredVia === "console") {
+        toast.error(
+          "Account found, but the invitation email could not be sent (SMTP is not configured).",
+        );
+      } else {
+        toast.success(`We sent a code to ${res.maskedEmail}`);
+      }
       startCooldown();
     } catch (err: any) {
       toast.error(err.message ?? "No invitation found for this email");
@@ -59,8 +65,12 @@ function AcceptInvitePage() {
     if (cooldown > 0) return;
     setBusy(true);
     try {
-      await resendInvite(email);
-      toast.success("Code resent");
+      const res = await resendInvite(email);
+      if (res.deliveredVia === "console") {
+        toast.error("Could not resend — the invitation email service is not configured.");
+      } else {
+        toast.success("Code resent");
+      }
       startCooldown();
     } catch (err: any) {
       toast.error(err.message ?? "Failed to resend");

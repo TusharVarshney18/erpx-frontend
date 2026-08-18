@@ -72,9 +72,13 @@ function ResetPasswordPage() {
     if (!email) return;
     setBusy(true);
     try {
-      await resendVerification(email, "PASSWORD_RESET");
+      const result = await resendVerification(email, "PASSWORD_RESET");
       start(60);
-      toast.success("A new code has been sent.");
+      if (result.deliveredVia === "console") {
+        toast.error("Could not send the code — the email service is not configured.");
+      } else {
+        toast.success("A new code has been sent.");
+      }
     } catch (err: any) {
       const match = err?.message?.match(/(\d+)s/);
       if (match) start(Number(match[1]));

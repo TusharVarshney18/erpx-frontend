@@ -67,7 +67,11 @@ function VerifyEmailPage() {
       const result = await resendVerification(pendingEmail, "EMAIL_VERIFICATION");
       setMasked(result.maskedEmail);
       start(60);
-      toast.success("A new code has been sent.");
+      if (result.deliveredVia === "console") {
+        toast.error("Could not send the code — the verification email service is not configured.");
+      } else {
+        toast.success("A new code has been sent.");
+      }
     } catch (e: any) {
       toast.error(e?.message ?? "Could not resend the code. Please wait and try again.");
       const match = e?.message?.match(/(\d+)s/);
