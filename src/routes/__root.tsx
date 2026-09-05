@@ -93,7 +93,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           "Modern, enterprise-grade ERP for accounting, sales, inventory, CRM, HR and analytics.",
       },
     ],
-    links: [{ rel: "stylesheet", href: appCss }],
+    links: [
+      { rel: "stylesheet", href: appCss },
+      { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
+      { rel: "icon", type: "image/x-icon", href: "/favicon.ico" },
+      { rel: "apple-touch-icon", sizes: "180x180", href: "/apple-touch-icon.png" },
+    ],
   }),
   shellComponent: RootShell,
   component: RootComponent,
@@ -199,8 +204,8 @@ function RouteDenied() {
         </div>
         <h1 className="text-lg font-semibold">403 · Access denied</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Your account doesn't have permission to access this page. Contact an
-          administrator if you believe this is a mistake.
+          Your account doesn't have permission to access this page. Contact an administrator if you
+          believe this is a mistake.
         </p>
       </div>
     </div>
