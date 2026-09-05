@@ -384,7 +384,7 @@ function AuthPage() {
       if (result.requiresEmailVerification) {
         if (result.deliveredVia === "console") {
           toast.error(
-            "Account created, but the verification email could not be sent (SMTP is not configured).",
+            "Email couldn't be delivered — the verification code is in the server console/logs.",
           );
         } else {
           toast.success("Account created. Check your inbox for a verification code.");

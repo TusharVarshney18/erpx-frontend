@@ -35,7 +35,7 @@ function AcceptInvitePage() {
       setStep("code");
       if (res.deliveredVia === "console") {
         toast.error(
-          "Account found, but the invitation email could not be sent (SMTP is not configured).",
+          "Email couldn't be delivered — the invitation code is in the server console/logs.",
         );
       } else {
         toast.success(`We sent a code to ${res.maskedEmail}`);
@@ -67,7 +67,9 @@ function AcceptInvitePage() {
     try {
       const res = await resendInvite(email);
       if (res.deliveredVia === "console") {
-        toast.error("Could not resend — the invitation email service is not configured.");
+        toast.error(
+          "Email couldn't be delivered — the invitation code is in the server console/logs.",
+        );
       } else {
         toast.success("Code resent");
       }

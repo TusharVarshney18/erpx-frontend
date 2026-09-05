@@ -6,11 +6,7 @@ import { useCountdown } from "@/hooks/useCountdown";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import {
-  InputOTP,
-  InputOTPGroup,
-  InputOTPSlot,
-} from "@/components/ui/input-otp";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { toast } from "sonner";
 import { Building2, Loader2, ShieldCheck } from "lucide-react";
 
@@ -68,7 +64,9 @@ function VerifyEmailPage() {
       setMasked(result.maskedEmail);
       start(60);
       if (result.deliveredVia === "console") {
-        toast.error("Could not send the code — the verification email service is not configured.");
+        toast.error(
+          "Email couldn't be delivered — the verification code is in the server console/logs.",
+        );
       } else {
         toast.success("A new code has been sent.");
       }
@@ -107,7 +105,11 @@ function VerifyEmailPage() {
                   value={pendingEmail}
                   onChange={(e) => setPendingEmail(e.target.value)}
                 />
-                <Button className="w-full gradient-primary text-white shadow-glow" onClick={resend} disabled={busy}>
+                <Button
+                  className="w-full gradient-primary text-white shadow-glow"
+                  onClick={resend}
+                  disabled={busy}
+                >
                   {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Send code
                 </Button>
@@ -142,20 +144,22 @@ function VerifyEmailPage() {
                   Verify
                 </Button>
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>{secondsLeft > 0 ? `Resend code in ${format()}` : "Didn't receive it?"}</span>
+                  <span>
+                    {secondsLeft > 0 ? `Resend code in ${format()}` : "Didn't receive it?"}
+                  </span>
                   {secondsLeft === 0 && (
-                    <button className="font-medium text-primary hover:underline" onClick={resend} disabled={busy}>
+                    <button
+                      className="font-medium text-primary hover:underline"
+                      onClick={resend}
+                      disabled={busy}
+                    >
                       Resend code
                     </button>
                   )}
                 </div>
               </>
             )}
-            <Button
-              variant="link"
-              className="w-full"
-              onClick={() => nav({ to: "/auth" })}
-            >
+            <Button variant="link" className="w-full" onClick={() => nav({ to: "/auth" })}>
               <Building2 className="mr-1.5 h-3.5 w-3.5" /> Back to sign in
             </Button>
           </div>

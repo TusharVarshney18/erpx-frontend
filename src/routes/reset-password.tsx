@@ -7,11 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  InputOTP,
-  InputOTPGroup,
-  InputOTPSlot,
-} from "@/components/ui/input-otp";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { toast } from "sonner";
 import { KeyRound, Loader2, ShieldCheck, Eye, EyeOff } from "lucide-react";
 
@@ -75,7 +71,7 @@ function ResetPasswordPage() {
       const result = await resendVerification(email, "PASSWORD_RESET");
       start(60);
       if (result.deliveredVia === "console") {
-        toast.error("Could not send the code — the email service is not configured.");
+        toast.error("Email couldn't be delivered — the reset code is in the server console/logs.");
       } else {
         toast.success("A new code has been sent.");
       }
@@ -100,7 +96,10 @@ function ResetPasswordPage() {
             <CardDescription>Your password has been reset successfully.</CardDescription>
           </CardHeader>
           <CardContent>
-            <Button className="w-full gradient-primary text-white shadow-glow" onClick={() => nav({ to: "/auth", search: { email } })}>
+            <Button
+              className="w-full gradient-primary text-white shadow-glow"
+              onClick={() => nav({ to: "/auth", search: { email } })}
+            >
               Sign in
             </Button>
           </CardContent>
@@ -158,7 +157,12 @@ function ResetPasswordPage() {
                 {secondsLeft > 0 ? (
                   <span>Resend code in {format()}</span>
                 ) : (
-                  <button type="button" className="font-medium text-primary hover:underline" onClick={resend} disabled={busy}>
+                  <button
+                    type="button"
+                    className="font-medium text-primary hover:underline"
+                    onClick={resend}
+                    disabled={busy}
+                  >
                     Resend code
                   </button>
                 )}
@@ -201,11 +205,20 @@ function ResetPasswordPage() {
               />
             </div>
 
-            <Button type="submit" disabled={busy} className="w-full gradient-primary text-white shadow-glow">
+            <Button
+              type="submit"
+              disabled={busy}
+              className="w-full gradient-primary text-white shadow-glow"
+            >
               {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Reset Password
             </Button>
-            <Button type="button" variant="link" className="w-full" onClick={() => nav({ to: "/auth" })}>
+            <Button
+              type="button"
+              variant="link"
+              className="w-full"
+              onClick={() => nav({ to: "/auth" })}
+            >
               Back to sign in
             </Button>
           </form>

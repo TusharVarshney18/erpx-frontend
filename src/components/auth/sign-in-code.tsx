@@ -51,7 +51,7 @@ export function SignInCodePanel({
       start(60);
       if (res.deliveredVia === "console") {
         toast.error(
-          "Development mode: email sending is not configured — check the backend console for your sign-in code.",
+          "Email couldn't be delivered — the sign-in code is in the server console/logs.",
         );
       } else if (res.deliveredVia === "none" || !res.maskedEmail) {
         toast.success("If an account exists for this email, a sign-in code is on its way.");
