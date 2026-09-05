@@ -5,6 +5,7 @@ import { api } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth";
 import { PageHeader } from "@/components/layout/PageShell";
 import { PremiumGate } from "@/components/premium/PremiumGate";
+import { UpgradeDialog } from "@/components/billing/upgrade-dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
@@ -94,16 +95,20 @@ type Invoice = {
 
 function BillingPage() {
   const qc = useQueryClient();
-  const { activeOrganizationId } = useAuth();
+  const { activeOrganizationId, isSuperAdmin } = useAuth();
   const [showChangePlan, setShowChangePlan] = useState(false);
+  const [showUpgrade, setShowUpgrade] = useState(false);
   const [selectedPlanId, setSelectedPlanId] = useState("");
 
-  const { data: subscription, isLoading: subLoading, isError: subError, refetch: refetchSub } = useQuery({
+  const {
+    data: subscription,
+    isLoading: subLoading,
+    isError: subError,
+    refetch: refetchSub,
+  } = useQuery({
     queryKey: ["admin-subscription", activeOrganizationId],
     queryFn: () =>
-      api.get<Subscription>(
-        `/billing-portal/organizations/${activeOrganizationId}/subscription`,
-      ),
+      api.get<Subscription>(`/billing-portal/organizations/${activeOrganizationId}/subscription`),
     enabled: !!activeOrganizationId,
   });
 
@@ -123,12 +128,9 @@ function BillingPage() {
 
   const changePlan = useMutation({
     mutationFn: async () => {
-      return api.patch(
-        `/subscriptions/organizations/${activeOrganizationId}/subscription/plan`,
-        {
-          planId: selectedPlanId,
-        },
-      );
+      return api.patch(`/subscriptions/organizations/${activeOrganizationId}/subscription/plan`, {
+        planId: selectedPlanId,
+      });
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin-subscription"] });
@@ -196,9 +198,7 @@ function BillingPage() {
         <div className="flex flex-col items-center gap-3 py-16 text-center">
           <AlertCircle className="h-10 w-10 text-destructive" />
           <p className="font-semibold">Failed to load subscription</p>
-          <p className="text-sm text-muted-foreground">
-            Check your connection and try again.
-          </p>
+          <p className="text-sm text-muted-foreground">Check your connection and try again.</p>
           <Button variant="outline" size="sm" onClick={() => refetchSub()}>
             <RefreshCw className="mr-1.5 h-3.5 w-3.5" /> Retry
           </Button>
@@ -218,7 +218,8 @@ function BillingPage() {
                       {subscription.status}
                     </Badge>
                     <span className="text-sm text-muted-foreground">
-                      {formatCurrency(subscription.plan.price, subscription.plan.currency)} / {subscription.plan.billingInterval.toLowerCase()}
+                      {formatCurrency(subscription.plan.price, subscription.plan.currency)} /{" "}
+                      {subscription.plan.billingInterval.toLowerCase()}
                     </span>
                   </div>
                 </CardContent>
@@ -229,7 +230,8 @@ function BillingPage() {
                     <CalendarDays className="h-4 w-4" /> Billing Period
                   </div>
                   <p className="text-lg font-semibold">
-                    {formatDate(subscription.currentPeriodStart)} — {formatDate(subscription.currentPeriodEnd)}
+                    {formatDate(subscription.currentPeriodStart)} —{" "}
+                    {formatDate(subscription.currentPeriodEnd)}
                   </p>
                   {subscription.trialEndsAt && (
                     <p className="text-xs text-muted-foreground">
@@ -255,8 +257,12 @@ function BillingPage() {
               size="sm"
               className="gradient-primary text-white"
               onClick={() => {
-                setSelectedPlanId(subscription?.planId ?? "");
-                setShowChangePlan(true);
+                if (isSuperAdmin) {
+                  setSelectedPlanId(subscription?.planId ?? "");
+                  setShowChangePlan(true);
+                } else {
+                  setShowUpgrade(true);
+                }
               }}
             >
               <ArrowUpDown className="mr-1.5 h-3.5 w-3.5" /> Change Plan
@@ -316,9 +322,7 @@ function BillingPage() {
               <TableBody>
                 {invoices.map((inv) => (
                   <TableRow key={inv.id}>
-                    <TableCell className="font-medium">
-                      {inv.invoiceNumber}
-                    </TableCell>
+                    <TableCell className="font-medium">{inv.invoiceNumber}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       {formatDate(inv.periodStart)} — {formatDate(inv.periodEnd)}
                     </TableCell>
@@ -326,9 +330,7 @@ function BillingPage() {
                       {formatCurrency(inv.totalAmount, inv.currency)}
                     </TableCell>
                     <TableCell>
-                      <Badge className={statusBadge(inv.status)}>
-                        {inv.status}
-                      </Badge>
+                      <Badge className={statusBadge(inv.status)}>{inv.status}</Badge>
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       {formatDate(inv.paidAt)}
@@ -369,7 +371,8 @@ function BillingPage() {
                     .filter((p) => p.isActive)
                     .map((plan) => (
                       <SelectItem key={plan.id} value={plan.id}>
-                        {plan.name} — {formatCurrency(plan.price, plan.currency)} / {plan.billingInterval.toLowerCase()}
+                        {plan.name} — {formatCurrency(plan.price, plan.currency)} /{" "}
+                        {plan.billingInterval.toLowerCase()}
                       </SelectItem>
                     ))}
                 </SelectContent>
@@ -385,14 +388,14 @@ function BillingPage() {
               disabled={changePlan.isPending || !selectedPlanId}
               onClick={() => changePlan.mutate()}
             >
-              {changePlan.isPending && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              )}
+              {changePlan.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Confirm Change
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <UpgradeDialog open={showUpgrade} onOpenChange={setShowUpgrade} />
     </div>
   );
 }
