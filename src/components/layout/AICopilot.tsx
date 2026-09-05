@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { aiChat } from "@/lib/api/ai";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
+import { UpgradeDialog } from "@/components/billing/upgrade-dialog";
 
 type Msg = { role: "user" | "ai"; text: string };
 
@@ -28,6 +29,7 @@ const examples = [
 
 export function AICopilot() {
   const [open, setOpen] = useState(false);
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const { status, ctx } = useFeatureAccess();
@@ -55,12 +57,12 @@ export function AICopilot() {
       const res = await aiChat([...history, { role: "user" as const, content: q }]);
       const reply = res?.message?.content || "I'm sorry, I couldn't generate a response.";
       setMessages((m) => [...m, { role: "ai", text: reply }]);
-    } catch (e: any) {
-      const msg = e?.message ?? "";
-      const status = e?.status ?? e?.statusCode;
+    } catch (e) {
+      const obj = (e ?? {}) as { message?: string; status?: number; statusCode?: number };
+      const msg = obj.message ?? "";
+      const status = obj.status ?? obj.statusCode;
       const isProviderMissing =
-        status === 503 ||
-        /provider|not configured|no provider|unavailable|503/i.test(msg);
+        status === 503 || /provider|not configured|no provider|unavailable|503/i.test(msg);
       const fallback = isProviderMissing
         ? "AI provider is not configured. Set up an LLM provider (e.g. Ollama or OpenAI) in the backend configuration to enable AI."
         : "Something went wrong while contacting the AI service. Please try again.";
@@ -109,87 +111,97 @@ export function AICopilot() {
                     Upgrade to Premium to unlock AI capabilities in the demo workspace.
                   </p>
                 </div>
-                <Button className="h-9 gradient-primary text-white">
+                <Button
+                  className="h-9 gradient-primary text-white"
+                  onClick={() => setUpgradeOpen(true)}
+                >
                   <Crown className="mr-1.5 h-3.5 w-3.5" /> Upgrade to Premium
                 </Button>
               </div>
             ) : (
-            <div className="space-y-3">
-              {messages.map((m, i) => (
-                <div
-                  key={i}
-                  className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
-                >
+              <div className="space-y-3">
+                {messages.map((m, i) => (
                   <div
-                    className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-3 py-2 text-sm leading-relaxed ${
-                      m.role === "user" ? "gradient-primary text-white" : "bg-muted text-foreground"
-                    }`}
+                    key={i}
+                    className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
                   >
-                    {m.text}
+                    <div
+                      className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-3 py-2 text-sm leading-relaxed ${
+                        m.role === "user"
+                          ? "gradient-primary text-white"
+                          : "bg-muted text-foreground"
+                      }`}
+                    >
+                      {m.text}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
 
-              {busy && (
-                <div className="flex justify-start">
-                  <div className="flex items-center gap-2 rounded-2xl bg-muted px-3 py-2 text-sm text-muted-foreground">
-                    <Loader2 className="h-4 w-4 animate-spin" /> Thinking...
+                {busy && (
+                  <div className="flex justify-start">
+                    <div className="flex items-center gap-2 rounded-2xl bg-muted px-3 py-2 text-sm text-muted-foreground">
+                      <Loader2 className="h-4 w-4 animate-spin" /> Thinking...
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {messages.length <= 1 && (
-                <div className="pt-2">
-                  <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    Try asking
+                {messages.length <= 1 && (
+                  <div className="pt-2">
+                    <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      Try asking
+                    </div>
+                    <div className="grid grid-cols-1 gap-1.5">
+                      {examples.map((e) => (
+                        <button
+                          key={e.text}
+                          onClick={() => send(e.text)}
+                          className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-left text-xs transition-colors hover:bg-accent"
+                        >
+                          <e.icon className="h-3.5 w-3.5 text-primary" />
+                          {e.text}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                  <div className="grid grid-cols-1 gap-1.5">
-                    {examples.map((e) => (
-                      <button
-                        key={e.text}
-                        onClick={() => send(e.text)}
-                        className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-left text-xs transition-colors hover:bg-accent"
-                      >
-                        <e.icon className="h-3.5 w-3.5 text-primary" />
-                        {e.text}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
             )}
           </ScrollArea>
 
           {!restricted && (
-          <div className="border-t border-border p-2">
-            <div className="flex items-center gap-1">
-              <Input
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && send()}
-                placeholder="Ask anything about your business…"
-                className="h-9 border-0 bg-muted/60 focus-visible:ring-1"
-              />
-              <Button
-                size="icon"
-                className="h-9 w-9 gradient-primary"
-                onClick={() => send()}
-                disabled={busy || !input.trim()}
-              >
-                {busy ? <Loader2 className="h-4 w-4 animate-spin text-white" /> : <Send className="h-4 w-4 text-white" />}
-              </Button>
+            <div className="border-t border-border p-2">
+              <div className="flex items-center gap-1">
+                <Input
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && send()}
+                  placeholder="Ask anything about your business…"
+                  className="h-9 border-0 bg-muted/60 focus-visible:ring-1"
+                />
+                <Button
+                  size="icon"
+                  className="h-9 w-9 gradient-primary"
+                  onClick={() => send()}
+                  disabled={busy || !input.trim()}
+                >
+                  {busy ? (
+                    <Loader2 className="h-4 w-4 animate-spin text-white" />
+                  ) : (
+                    <Send className="h-4 w-4 text-white" />
+                  )}
+                </Button>
+              </div>
+              <div className="mt-1.5 flex items-center justify-between px-1 text-[10px] text-muted-foreground">
+                <span>Powered by ERPX AI</span>
+                <Badge variant="secondary" className="h-4 text-[9px]">
+                  Beta
+                </Badge>
+              </div>
             </div>
-            <div className="mt-1.5 flex items-center justify-between px-1 text-[10px] text-muted-foreground">
-              <span>Powered by ERPX AI</span>
-              <Badge variant="secondary" className="h-4 text-[9px]">
-                Beta
-              </Badge>
-            </div>
-          </div>
           )}
         </div>
       )}
+      <UpgradeDialog open={upgradeOpen} onOpenChange={setUpgradeOpen} />
     </>
   );
 }

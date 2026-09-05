@@ -9,7 +9,7 @@ import {
   useLocation,
   useNavigate,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -19,9 +19,11 @@ import { TopHeader } from "@/components/layout/TopHeader";
 import { AICopilot } from "@/components/layout/AICopilot";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { Button } from "@/components/ui/button";
 import { AuthProvider, useAuth } from "@/lib/auth";
 import { useAccess } from "@/hooks/useAccess";
 import { getRouteAccess } from "@/lib/navigation-access";
+import { UpgradeDialog } from "@/components/billing/upgrade-dialog";
 import { Loader2, ShieldAlert, Lock } from "lucide-react";
 
 function NotFoundComponent() {
@@ -213,6 +215,7 @@ function RouteDenied() {
 }
 
 function RouteLocked({ plan }: { plan: string | null }) {
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
   return (
     <div className="flex min-h-[60vh] items-center justify-center">
       <div className="max-w-md text-center">
@@ -224,7 +227,14 @@ function RouteLocked({ plan }: { plan: string | null }) {
           This feature is included in a paid plan. Your organization is on{" "}
           <span className="font-semibold">{(plan ?? "FREE").toUpperCase()}</span>.
         </p>
+        <Button
+          className="mt-5 gradient-primary text-white shadow-glow"
+          onClick={() => setUpgradeOpen(true)}
+        >
+          Upgrade to Premium
+        </Button>
       </div>
+      <UpgradeDialog open={upgradeOpen} onOpenChange={setUpgradeOpen} />
     </div>
   );
 }
