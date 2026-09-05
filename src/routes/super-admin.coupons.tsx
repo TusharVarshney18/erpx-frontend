@@ -27,14 +27,23 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
-  Ticket,
-  Loader2,
-  AlertCircle,
-  RefreshCw,
-  Ban,
-  TimerOff,
-  Trash2,
-} from "lucide-react";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Ticket, Plus, Loader2, AlertCircle, RefreshCw, Ban, TimerOff, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 
@@ -94,13 +103,56 @@ const statusOf = (c: Coupon): CouponStatus => {
 function SuperAdminCoupons() {
   const qc = useQueryClient();
   const [deleting, setDeleting] = useState<Coupon | null>(null);
+  const [showCreate, setShowCreate] = useState(false);
+  const [newCode, setNewCode] = useState("");
+  const [newName, setNewName] = useState("");
+  const [newDiscountType, setNewDiscountType] = useState<"PERCENTAGE" | "FIXED_AMOUNT">(
+    "PERCENTAGE",
+  );
+  const [newDiscountValue, setNewDiscountValue] = useState("");
+  const [newMaxUses, setNewMaxUses] = useState("");
 
-  const { data: coupons = [], isLoading, isError, refetch } = useQuery({
+  const createCoupon = useMutation({
+    mutationFn: async () => {
+      return api.post("/super-admin/coupons", {
+        code: newCode.trim().toUpperCase(),
+        name: newName.trim(),
+        discountType: newDiscountType,
+        discountValue: parseInt(newDiscountValue, 10),
+        maxUses: newMaxUses.trim() ? parseInt(newMaxUses, 10) : undefined,
+        isActive: true,
+      });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["super-admin-coupons"] });
+      qc.invalidateQueries({ queryKey: ["super-admin-coupon-analytics"] });
+      toast.success("Coupon issued");
+      setShowCreate(false);
+      setNewCode("");
+      setNewName("");
+      setNewDiscountType("PERCENTAGE");
+      setNewDiscountValue("");
+      setNewMaxUses("");
+    },
+    onError: (e: any) => toast.error(e.message ?? "Create coupon failed"),
+  });
+
+  const {
+    data: coupons = [],
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery({
     queryKey: ["super-admin-coupons"],
     queryFn: () => api.get<Coupon[]>("/super-admin/coupons"),
   });
 
-  const { data: analytics, isLoading: analyticsLoading, isError: analyticsError, refetch: refetchAnalytics } = useQuery({
+  const {
+    data: analytics,
+    isLoading: analyticsLoading,
+    isError: analyticsError,
+    refetch: refetchAnalytics,
+  } = useQuery({
     queryKey: ["super-admin-coupon-analytics"],
     queryFn: () => api.get<CouponAnalytics>("/super-admin/coupons/analytics"),
   });
@@ -174,7 +226,106 @@ function SuperAdminCoupons() {
 
   return (
     <div className="max-w-[1400px] mx-auto space-y-6">
-      <PageHeader title="Coupons" subtitle="Manage discount codes across the platform" />
+      <PageHeader
+        title="Coupons"
+        subtitle="Manage discount codes across the platform"
+        actions={
+          <Button
+            size="sm"
+            className="gradient-primary text-white"
+            onClick={() => setShowCreate(true)}
+          >
+            <Plus className="mr-1.5 h-3.5 w-3.5" /> Issue Coupon
+          </Button>
+        }
+      />
+
+      <Dialog open={showCreate} onOpenChange={setShowCreate}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Issue Coupon</DialogTitle>
+            <DialogDescription>Create a new discount code for any plan.</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>Code *</Label>
+                <Input
+                  value={newCode}
+                  onChange={(e) => setNewCode(e.target.value.toUpperCase())}
+                  placeholder="SUMMER2026"
+                  maxLength={50}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Name *</Label>
+                <Input
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  placeholder="Summer Sale"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>Type</Label>
+                <Select
+                  value={newDiscountType}
+                  onValueChange={(v) => setNewDiscountType(v as "PERCENTAGE" | "FIXED_AMOUNT")}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="PERCENTAGE">Percentage (%)</SelectItem>
+                    <SelectItem value="FIXED_AMOUNT">Fixed amount</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>
+                  {newDiscountType === "PERCENTAGE" ? "Discount % *" : "Discount amount *"}
+                </Label>
+                <Input
+                  type="number"
+                  min={1}
+                  value={newDiscountValue}
+                  onChange={(e) => setNewDiscountValue(e.target.value)}
+                  placeholder={newDiscountType === "PERCENTAGE" ? "20" : "1000"}
+                />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Max uses (blank = unlimited)</Label>
+              <Input
+                type="number"
+                min={1}
+                value={newMaxUses}
+                onChange={(e) => setNewMaxUses(e.target.value)}
+                placeholder="100"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCreate(false)}>
+              Cancel
+            </Button>
+            <Button
+              className="gradient-primary text-white"
+              disabled={
+                createCoupon.isPending ||
+                !newCode.trim() ||
+                !newName.trim() ||
+                !parseInt(newDiscountValue, 10)
+              }
+              onClick={() => createCoupon.mutate()}
+            >
+              {createCoupon.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Issue Coupon
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {analyticsError && !analyticsLoading ? (
         <div className="flex flex-col items-center gap-3 py-10 text-center">
@@ -189,7 +340,9 @@ function SuperAdminCoupons() {
           {kpis.map((kpi) => (
             <Card key={kpi.label}>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">{kpi.label}</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  {kpi.label}
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 {kpi.loading ? (
