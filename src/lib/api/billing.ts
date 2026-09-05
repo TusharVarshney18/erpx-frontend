@@ -8,9 +8,15 @@ export type BillingPlan = {
   slug: string;
   description?: string | null;
   price: number;
+  priceInr?: number | null;
   currency: string;
   billingInterval: PlanInterval;
   isActive: boolean;
+};
+
+export type RegionInfo = {
+  countryCode: string;
+  currency: "INR" | "USD";
 };
 
 export type CheckoutResult = {
@@ -37,8 +43,9 @@ export type RazorpayResponse = {
 
 export const billingApi = {
   plans: () => api.get<BillingPlan[]>("/subscriptions/plans?isActive=true"),
-  createCheckout: (planId: string, provider = "razorpay") =>
-    api.post<CheckoutResult>("/billing/checkout", { planId, provider }),
+  region: () => api.get<RegionInfo>("/billing/region"),
+  createCheckout: (planId: string, provider?: string) =>
+    api.post<CheckoutResult>("/billing/checkout", provider ? { planId, provider } : { planId }),
   verifyPayment: (input: {
     provider: string;
     sessionId: string;

@@ -28,16 +28,21 @@ function errorMessage(err: unknown, fallback: string): string {
   return fallback;
 }
 
-function formatPlanPrice(plan: { price: number; currency: string }): string {
+function planAmount(plan: BillingPlan, currency: "INR" | "USD"): number {
+  return currency === "INR" ? (plan.priceInr ?? plan.price) : plan.price;
+}
+
+function formatPlanPrice(plan: BillingPlan, currency: "INR" | "USD"): string {
+  const code = currency === "INR" ? "INR" : "USD";
   try {
     return new Intl.NumberFormat("en-IN", {
       style: "currency",
-      currency: plan.currency,
+      currency: code,
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
-    }).format(plan.price / 100);
+    }).format(planAmount(plan, currency) / 100);
   } catch {
-    return `${plan.currency} ${(plan.price / 100).toFixed(0)}`;
+    return `${code} ${(planAmount(plan, currency) / 100).toFixed(0)}`;
   }
 }
 
@@ -58,6 +63,13 @@ export function UpgradeDialog({
     enabled: open,
   });
 
+  const { data: region } = useQuery({
+    queryKey: ["billing-region"],
+    queryFn: billingApi.region,
+    enabled: open,
+  });
+  const currency: "INR" | "USD" = region?.currency ?? "INR";
+
   const purchasable = plans
     .filter((p) => p.isActive && p.slug !== "free" && !p.slug.includes("-yearly"))
     .sort((a, b) => a.price - b.price);
@@ -66,7 +78,15 @@ export function UpgradeDialog({
   const pay = async (plan: BillingPlan) => {
     setPaying(true);
     try {
-      const checkout = await billingApi.createCheckout(plan.id, "razorpay");
+      const checkout = await billingApi.createCheckout(plan.id);
+
+      // Non-Indian customers go through the provider's hosted page (Stripe).
+      if (checkout.provider !== "razorpay") {
+        toast.info("Redirecting you to secure payment…");
+        window.location.assign(checkout.checkoutUrl);
+        return;
+      }
+
       if (!RAZORPAY_KEY_ID) {
         toast.error("Payments are not configured yet. Please try again shortly.");
         return;
@@ -167,9 +187,12 @@ export function UpgradeDialog({
                   </div>
                   <div className="mt-3">
                     <span className="text-2xl font-bold tracking-tight">
-                      {formatPlanPrice(plan)}
+                      {formatPlanPrice(plan, currency)}
                     </span>
-                    <span className="text-xs text-muted-foreground"> / month</span>
+                    <span className="text-xs text-muted-foreground">
+                      {" "}
+                      / month · {currency === "INR" ? "₹ India" : "$ International"}
+                    </span>
                   </div>
                   <ul className="mt-4 flex-1 space-y-2 text-sm text-muted-foreground">
                     {highlights.map((h) => (
