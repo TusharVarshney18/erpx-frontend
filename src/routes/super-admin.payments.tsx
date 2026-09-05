@@ -57,6 +57,7 @@ function SuperAdminPayments() {
     queryFn: () =>
       api.get<{ data: Payment[]; meta: { total: number; page: number; totalPages: number } }>("/super-admin/payments", {
         params: { page: String(page), limit: "25" },
+        keepMeta: true,
       }),
   });
 

@@ -79,10 +79,7 @@ type AuditLog = {
 
 type PaginatedLogs = {
   data: AuditLog[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
+  meta: { total: number; page: number; limit: number; totalPages: number };
 };
 
 const EVENT_TYPES = [
@@ -121,19 +118,21 @@ function SuperAdminAuditLogs() {
   queryParams.set("page", String(page));
   queryParams.set("limit", String(PAGE_SIZE));
   if (eventFilter !== "all") queryParams.set("event", eventFilter);
-  if (dateFrom) queryParams.set("from", dateFrom.toISOString());
-  if (dateTo) queryParams.set("to", dateTo.toISOString());
-  if (search.trim()) queryParams.set("q", search.trim());
+  if (dateFrom) queryParams.set("fromDate", dateFrom.toISOString());
+  if (dateTo) queryParams.set("toDate", dateTo.toISOString());
+  if (search.trim()) queryParams.set("search", search.trim());
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["super-admin-audit-logs", page, eventFilter, dateFrom, dateTo, search],
     queryFn: () =>
-      api.get<PaginatedLogs>(`/super-admin/audit-logs?${queryParams.toString()}`),
+      api.get<PaginatedLogs>(`/super-admin/audit-logs?${queryParams.toString()}`, {
+        keepMeta: true,
+      }),
   });
 
   const logs = data?.data ?? [];
-  const totalPages = data?.totalPages ?? 1;
-  const total = data?.total ?? 0;
+  const totalPages = data?.meta?.totalPages ?? 1;
+  const total = data?.meta?.total ?? 0;
 
   const clearFilters = () => {
     setEventFilter("all");

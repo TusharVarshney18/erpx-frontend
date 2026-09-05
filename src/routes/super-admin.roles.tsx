@@ -47,7 +47,7 @@ function SuperAdminRoles() {
     queryFn: () =>
       api.get<{ data: Role[]; meta: { total: number; page: number; totalPages: number } }>(
         "/super-admin/roles",
-        { params: { search, page: String(page), limit: "50" } },
+        { params: { search, page: String(page), limit: "50" }, keepMeta: true },
       ),
   });
 

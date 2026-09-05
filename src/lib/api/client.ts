@@ -76,6 +76,8 @@ async function refreshAccessToken(): Promise<void> {
 
 type RequestOptions = RequestInit & {
   params?: Record<string, string>;
+  /** Keep { data, meta } paginated payloads intact instead of flattening to the inner array. */
+  keepMeta?: boolean;
 };
 
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
@@ -134,10 +136,13 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   // Unwrap backend envelope: { success, data, message, meta } -> data
   if (body && typeof body === "object" && "success" in body && "data" in body) {
     const unwrapped = body.data as T;
-    // Handle double-wrapping: { data: data: [...] } when business-data
-    // controller returns { data: [...], total, ... } and the
-    // TransformInterceptor repackages it.
-    if (unwrapped && typeof unwrapped === "object" && !Array.isArray(unwrapped)) {
+    // Keep paginated payloads intact so callers can read meta/totalPages.
+    if (
+      !options.keepMeta &&
+      unwrapped &&
+      typeof unwrapped === "object" &&
+      !Array.isArray(unwrapped)
+    ) {
       const obj = unwrapped as Record<string, unknown>;
       if ("data" in obj && Array.isArray(obj.data)) {
         return obj.data as T;

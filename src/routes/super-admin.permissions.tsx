@@ -54,6 +54,7 @@ function SuperAdminPermissions() {
     queryFn: () =>
       api.get<{ data: Permission[]; meta: { total: number } }>("/super-admin/permissions", {
         params: { search, limit: "500" },
+        keepMeta: true,
       }),
   });
 

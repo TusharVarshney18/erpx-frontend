@@ -144,10 +144,14 @@ function SuperAdminOrganizations() {
   const updateOrg = useMutation({
     mutationFn: async () => {
       if (!editing) return;
+      // Plan changes go through the dedicated endpoint so the subscription row,
+      // org plan and roleVersion stay consistent (billing/feature gating).
+      if (editPlan !== editing.plan) {
+        await api.patch(`/super-admin/organizations/${editing.id}/plan`, { plan: editPlan });
+      }
       return api.patch(`/super-admin/organizations/${editing.id}`, {
         name: editName.trim(),
         domain: editDomain.trim() || null,
-        plan: editPlan,
       });
     },
     onSuccess: () => {
@@ -156,6 +160,19 @@ function SuperAdminOrganizations() {
       setEditing(null);
     },
     onError: (e: any) => toast.error(e.message ?? "Update failed"),
+  });
+
+  const revokeToFree = useMutation({
+    mutationFn: async () => {
+      if (!editing) return;
+      return api.patch(`/super-admin/organizations/${editing.id}/plan`, { plan: "FREE" });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["super-admin-organizations"] });
+      toast.success("Subscription revoked — organization downgraded to Free");
+      setEditing(null);
+    },
+    onError: (e: any) => toast.error(e.message ?? "Revoke failed"),
   });
 
   const suspendOrg = useMutation({
@@ -430,7 +447,25 @@ function SuperAdminOrganizations() {
               </Select>
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="flex-wrap gap-2">
+            <Button
+              variant="outline"
+              className="text-destructive hover:bg-destructive/10"
+              disabled={revokeToFree.isPending || editing?.plan === "FREE"}
+              onClick={() => {
+                if (
+                  window.confirm(
+                    "Revoke this subscription and downgrade the organization to Free?",
+                  )
+                ) {
+                  revokeToFree.mutate();
+                }
+              }}
+            >
+              {revokeToFree.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {editing?.plan === "FREE" ? "On Free plan" : "Revoke to Free"}
+            </Button>
+            <span className="ml-auto" />
             <Button variant="outline" onClick={() => setEditing(null)}>Cancel</Button>
             <Button className="gradient-primary text-white" disabled={updateOrg.isPending} onClick={() => updateOrg.mutate()}>
               {updateOrg.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

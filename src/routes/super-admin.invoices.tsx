@@ -59,6 +59,7 @@ function SuperAdminInvoices() {
     queryFn: () =>
       api.get<{ data: Invoice[]; meta: { total: number; page: number; totalPages: number } }>("/super-admin/invoices", {
         params: { page: String(page), limit: "25", search },
+        keepMeta: true,
       }),
   });
 
