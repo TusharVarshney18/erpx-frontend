@@ -326,7 +326,8 @@ function AuthPage() {
 
   const handleGoogleSignIn = () => {
     if (oauthBusy) return;
-    window.location.assign(`${API_BASE}/auth/google`);
+    const origin = encodeURIComponent(window.location.origin);
+    window.location.assign(`${API_BASE}/auth/google?origin=${origin}`);
   };
 
   const handleSignIn = async (e: React.FormEvent) => {
