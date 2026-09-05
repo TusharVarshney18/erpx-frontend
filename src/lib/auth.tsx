@@ -70,6 +70,11 @@ export type LoginResult =
   | { mfaRequired: true; mfaChallenge: string; user: { email: string } }
   | { mfaRequired: false; accessToken: string; refreshToken: string };
 
+export type LoginCodeDelivery = {
+  maskedEmail: string | null;
+  deliveredVia: string;
+};
+
 type MfaStatus = { enabled: boolean; enabledAt: string | null };
 type MfaEnrollResult = { secret: string; otpauthUrl: string };
 type MfaEnrollConfirmResult = { backupCodes: string[] };
@@ -127,6 +132,9 @@ type AuthCtx = {
   activeOrganizationId: string | null;
   signIn: (email: string, password: string) => Promise<LoginResult>;
   completeMfaLogin: (challenge: string, code: string) => Promise<void>;
+  requestLoginCode: (email: string) => Promise<LoginCodeDelivery>;
+  verifyLoginCode: (email: string, code: string) => Promise<LoginResult>;
+  completeOAuthLogin: (grant: string) => Promise<LoginResult>;
   mfaStatus: () => Promise<MfaStatus>;
   startMfaEnroll: () => Promise<MfaEnrollResult>;
   confirmMfaEnroll: (secret: string, code: string) => Promise<MfaEnrollConfirmResult>;
@@ -162,6 +170,9 @@ const Ctx = createContext<AuthCtx>({
   activeOrganizationId: null,
   signIn: async () => ({ mfaRequired: false, accessToken: "", refreshToken: "" }),
   completeMfaLogin: async () => {},
+  requestLoginCode: async () => ({ maskedEmail: null, deliveredVia: "console" }),
+  verifyLoginCode: async () => ({ mfaRequired: false, accessToken: "", refreshToken: "" }),
+  completeOAuthLogin: async () => ({ mfaRequired: false, accessToken: "", refreshToken: "" }),
   mfaStatus: async () => ({ enabled: false, enabledAt: null }),
   startMfaEnroll: async () => ({ secret: "", otpauthUrl: "" }),
   confirmMfaEnroll: async () => ({ backupCodes: [] }),
@@ -236,6 +247,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
   }, [fetchMe, fetchOrganizations]);
 
+  const finalizeAuthenticated = useCallback(
+    async (data: { accessToken: string; refreshToken: string }) => {
+      setTokens(data.accessToken, data.refreshToken);
+      const profile = await api.get<UserProfile>("/auth/me");
+      setUser(profile);
+      setActiveOrganizationId(profile.organization.id);
+      await fetchOrganizations();
+    },
+    [fetchOrganizations],
+  );
+
   const signIn = useCallback(
     async (email: string, password: string): Promise<LoginResult> => {
       const data = await api.post<LoginResponse & { mfaRequired?: boolean; mfaChallenge?: string }>(
@@ -245,26 +267,56 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (data.mfaRequired) {
         return { mfaRequired: true, mfaChallenge: data.mfaChallenge ?? "", user: { email } };
       }
-      setTokens(data.accessToken, data.refreshToken);
-      const profile = await api.get<UserProfile>("/auth/me");
-      setUser(profile);
-      setActiveOrganizationId(profile.organization.id);
-      await fetchOrganizations();
+      await finalizeAuthenticated(data);
       return { mfaRequired: false, accessToken: data.accessToken, refreshToken: data.refreshToken };
     },
-    [fetchOrganizations],
+    [finalizeAuthenticated],
   );
 
   const completeMfaLogin = useCallback(
     async (challenge: string, code: string) => {
       const data = await api.post<LoginResponse>("/auth/mfa/complete-login", { challenge, code });
-      setTokens(data.accessToken, data.refreshToken);
-      const profile = await api.get<UserProfile>("/auth/me");
-      setUser(profile);
-      setActiveOrganizationId(profile.organization.id);
-      await fetchOrganizations();
+      await finalizeAuthenticated(data);
     },
-    [fetchOrganizations],
+    [finalizeAuthenticated],
+  );
+
+  const requestLoginCode = useCallback(async (email: string) => {
+    return api.post<LoginCodeDelivery>("/auth/login-otp/request", { email });
+  }, []);
+
+  const verifyLoginCode = useCallback(
+    async (email: string, code: string): Promise<LoginResult> => {
+      const data = await api.post<LoginResponse & { mfaRequired?: boolean; mfaChallenge?: string }>(
+        "/auth/login-otp/verify",
+        { email, code },
+      );
+      if (data.mfaRequired) {
+        return { mfaRequired: true, mfaChallenge: data.mfaChallenge ?? "", user: { email } };
+      }
+      await finalizeAuthenticated(data);
+      return { mfaRequired: false, accessToken: data.accessToken, refreshToken: data.refreshToken };
+    },
+    [finalizeAuthenticated],
+  );
+
+  const completeOAuthLogin = useCallback(
+    async (grant: string): Promise<LoginResult> => {
+      const data = await api.post<LoginResponse & { mfaRequired?: boolean; mfaChallenge?: string }>(
+        "/auth/oauth/exchange",
+        { grant },
+      );
+      if (data.mfaRequired) {
+        return {
+          mfaRequired: true,
+          mfaChallenge: data.mfaChallenge ?? "",
+          user: { email: data.user?.email ?? "" },
+        };
+      }
+      await finalizeAuthenticated(data);
+      return { mfaRequired: false, accessToken: data.accessToken, refreshToken: data.refreshToken };
+    },
+    [finalizeAuthenticated],
   );
 
   const mfaStatus = useCallback(async () => {
@@ -334,6 +386,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await api.post("/auth/logout", {});
       }
     } catch {
+      // best-effort network call; always clear local session
     } finally {
       clearTokens();
       setUser(null);
@@ -382,6 +435,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     activeOrganizationId,
     signIn,
     completeMfaLogin,
+    requestLoginCode,
+    verifyLoginCode,
+    completeOAuthLogin,
     mfaStatus,
     startMfaEnroll,
     confirmMfaEnroll,

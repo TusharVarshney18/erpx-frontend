@@ -1,4 +1,4 @@
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3001/api/v1";
+export const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3001/api/v1";
 
 const isBrowser = typeof window !== "undefined";
 
@@ -14,7 +14,7 @@ type TokenStore = {
   refreshToken: string | null;
 };
 
-let tokens: TokenStore = {
+const tokens: TokenStore = {
   accessToken: null,
   refreshToken: loadRefreshToken(),
 };
@@ -81,7 +81,7 @@ type RequestOptions = RequestInit & {
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { params, ...fetchOptions } = options;
 
-  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
   let url = `${API_BASE}${normalizedPath}`;
   if (params) {
     const searchParams = new URLSearchParams(params);
@@ -120,8 +120,9 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     const err = new Error(
-      (body && typeof body === "object" && "message" in body ? (body as any).message : null) ||
-        `HTTP ${res.status}`,
+      (body && typeof body === "object" && "message" in body
+        ? (body as { message?: string }).message
+        : null) || `HTTP ${res.status}`,
     ) as Error & { status?: number; data?: unknown };
     err.status = res.status;
     err.data = body;
@@ -131,14 +132,14 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   const body = await res.json();
 
   // Unwrap backend envelope: { success, data, message, meta } -> data
-  if (body && typeof body === 'object' && 'success' in body && 'data' in body) {
+  if (body && typeof body === "object" && "success" in body && "data" in body) {
     const unwrapped = body.data as T;
     // Handle double-wrapping: { data: data: [...] } when business-data
     // controller returns { data: [...], total, ... } and the
     // TransformInterceptor repackages it.
-    if (unwrapped && typeof unwrapped === 'object' && !Array.isArray(unwrapped)) {
+    if (unwrapped && typeof unwrapped === "object" && !Array.isArray(unwrapped)) {
       const obj = unwrapped as Record<string, unknown>;
-      if ('data' in obj && Array.isArray(obj.data)) {
+      if ("data" in obj && Array.isArray(obj.data)) {
         return obj.data as T;
       }
     }
