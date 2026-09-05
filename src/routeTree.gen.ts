@@ -71,11 +71,9 @@ import { Route as SalesSalesOrdersRouteImport } from './routes/sales.sales-order
 import { Route as SecurityMfaRouteImport } from './routes/security.mfa'
 import { Route as SecuritySessionsRouteImport } from './routes/security.sessions'
 import { Route as SuperAdminAnnouncementsRouteImport } from './routes/super-admin.announcements'
-import { Route as SuperAdminApiUsageRouteImport } from './routes/super-admin.api-usage'
 import { Route as SuperAdminAuditLogsRouteImport } from './routes/super-admin.audit-logs'
 import { Route as SuperAdminCouponsRouteImport } from './routes/super-admin.coupons'
 import { Route as SuperAdminDashboardRouteImport } from './routes/super-admin.dashboard'
-import { Route as SuperAdminFeaturesRouteImport } from './routes/super-admin.features'
 import { Route as SuperAdminInvoicesRouteImport } from './routes/super-admin.invoices'
 import { Route as SuperAdminOrganizationsRouteImport } from './routes/super-admin.organizations'
 import { Route as SuperAdminPaymentsRouteImport } from './routes/super-admin.payments'
@@ -398,11 +396,6 @@ const SuperAdminAnnouncementsRoute = SuperAdminAnnouncementsRouteImport.update({
   path: '/super-admin/announcements',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SuperAdminApiUsageRoute = SuperAdminApiUsageRouteImport.update({
-  id: '/super-admin/api-usage',
-  path: '/super-admin/api-usage',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const SuperAdminAuditLogsRoute = SuperAdminAuditLogsRouteImport.update({
   id: '/super-admin/audit-logs',
   path: '/super-admin/audit-logs',
@@ -416,11 +409,6 @@ const SuperAdminCouponsRoute = SuperAdminCouponsRouteImport.update({
 const SuperAdminDashboardRoute = SuperAdminDashboardRouteImport.update({
   id: '/super-admin/dashboard',
   path: '/super-admin/dashboard',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SuperAdminFeaturesRoute = SuperAdminFeaturesRouteImport.update({
-  id: '/super-admin/features',
-  path: '/super-admin/features',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SuperAdminInvoicesRoute = SuperAdminInvoicesRouteImport.update({
@@ -532,11 +520,9 @@ export interface FileRoutesByFullPath {
   '/security/mfa': typeof SecurityMfaRoute
   '/security/sessions': typeof SecuritySessionsRoute
   '/super-admin/announcements': typeof SuperAdminAnnouncementsRoute
-  '/super-admin/api-usage': typeof SuperAdminApiUsageRoute
   '/super-admin/audit-logs': typeof SuperAdminAuditLogsRoute
   '/super-admin/coupons': typeof SuperAdminCouponsRoute
   '/super-admin/dashboard': typeof SuperAdminDashboardRoute
-  '/super-admin/features': typeof SuperAdminFeaturesRoute
   '/super-admin/invoices': typeof SuperAdminInvoicesRoute
   '/super-admin/organizations': typeof SuperAdminOrganizationsRoute
   '/super-admin/payments': typeof SuperAdminPaymentsRoute
@@ -610,11 +596,9 @@ export interface FileRoutesByTo {
   '/security/mfa': typeof SecurityMfaRoute
   '/security/sessions': typeof SecuritySessionsRoute
   '/super-admin/announcements': typeof SuperAdminAnnouncementsRoute
-  '/super-admin/api-usage': typeof SuperAdminApiUsageRoute
   '/super-admin/audit-logs': typeof SuperAdminAuditLogsRoute
   '/super-admin/coupons': typeof SuperAdminCouponsRoute
   '/super-admin/dashboard': typeof SuperAdminDashboardRoute
-  '/super-admin/features': typeof SuperAdminFeaturesRoute
   '/super-admin/invoices': typeof SuperAdminInvoicesRoute
   '/super-admin/organizations': typeof SuperAdminOrganizationsRoute
   '/super-admin/payments': typeof SuperAdminPaymentsRoute
@@ -689,11 +673,9 @@ export interface FileRoutesById {
   '/security/mfa': typeof SecurityMfaRoute
   '/security/sessions': typeof SecuritySessionsRoute
   '/super-admin/announcements': typeof SuperAdminAnnouncementsRoute
-  '/super-admin/api-usage': typeof SuperAdminApiUsageRoute
   '/super-admin/audit-logs': typeof SuperAdminAuditLogsRoute
   '/super-admin/coupons': typeof SuperAdminCouponsRoute
   '/super-admin/dashboard': typeof SuperAdminDashboardRoute
-  '/super-admin/features': typeof SuperAdminFeaturesRoute
   '/super-admin/invoices': typeof SuperAdminInvoicesRoute
   '/super-admin/organizations': typeof SuperAdminOrganizationsRoute
   '/super-admin/payments': typeof SuperAdminPaymentsRoute
@@ -769,11 +751,9 @@ export interface FileRouteTypes {
     | '/security/mfa'
     | '/security/sessions'
     | '/super-admin/announcements'
-    | '/super-admin/api-usage'
     | '/super-admin/audit-logs'
     | '/super-admin/coupons'
     | '/super-admin/dashboard'
-    | '/super-admin/features'
     | '/super-admin/invoices'
     | '/super-admin/organizations'
     | '/super-admin/payments'
@@ -847,11 +827,9 @@ export interface FileRouteTypes {
     | '/security/mfa'
     | '/security/sessions'
     | '/super-admin/announcements'
-    | '/super-admin/api-usage'
     | '/super-admin/audit-logs'
     | '/super-admin/coupons'
     | '/super-admin/dashboard'
-    | '/super-admin/features'
     | '/super-admin/invoices'
     | '/super-admin/organizations'
     | '/super-admin/payments'
@@ -925,11 +903,9 @@ export interface FileRouteTypes {
     | '/security/mfa'
     | '/security/sessions'
     | '/super-admin/announcements'
-    | '/super-admin/api-usage'
     | '/super-admin/audit-logs'
     | '/super-admin/coupons'
     | '/super-admin/dashboard'
-    | '/super-admin/features'
     | '/super-admin/invoices'
     | '/super-admin/organizations'
     | '/super-admin/payments'
@@ -1004,11 +980,9 @@ export interface RootRouteChildren {
   SecurityMfaRoute: typeof SecurityMfaRoute
   SecuritySessionsRoute: typeof SecuritySessionsRoute
   SuperAdminAnnouncementsRoute: typeof SuperAdminAnnouncementsRoute
-  SuperAdminApiUsageRoute: typeof SuperAdminApiUsageRoute
   SuperAdminAuditLogsRoute: typeof SuperAdminAuditLogsRoute
   SuperAdminCouponsRoute: typeof SuperAdminCouponsRoute
   SuperAdminDashboardRoute: typeof SuperAdminDashboardRoute
-  SuperAdminFeaturesRoute: typeof SuperAdminFeaturesRoute
   SuperAdminInvoicesRoute: typeof SuperAdminInvoicesRoute
   SuperAdminOrganizationsRoute: typeof SuperAdminOrganizationsRoute
   SuperAdminPaymentsRoute: typeof SuperAdminPaymentsRoute
@@ -1456,13 +1430,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SuperAdminAnnouncementsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/super-admin/api-usage': {
-      id: '/super-admin/api-usage'
-      path: '/super-admin/api-usage'
-      fullPath: '/super-admin/api-usage'
-      preLoaderRoute: typeof SuperAdminApiUsageRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/super-admin/audit-logs': {
       id: '/super-admin/audit-logs'
       path: '/super-admin/audit-logs'
@@ -1482,13 +1449,6 @@ declare module '@tanstack/react-router' {
       path: '/super-admin/dashboard'
       fullPath: '/super-admin/dashboard'
       preLoaderRoute: typeof SuperAdminDashboardRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/super-admin/features': {
-      id: '/super-admin/features'
-      path: '/super-admin/features'
-      fullPath: '/super-admin/features'
-      preLoaderRoute: typeof SuperAdminFeaturesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/super-admin/invoices': {
@@ -1620,11 +1580,9 @@ const rootRouteChildren: RootRouteChildren = {
   SecurityMfaRoute: SecurityMfaRoute,
   SecuritySessionsRoute: SecuritySessionsRoute,
   SuperAdminAnnouncementsRoute: SuperAdminAnnouncementsRoute,
-  SuperAdminApiUsageRoute: SuperAdminApiUsageRoute,
   SuperAdminAuditLogsRoute: SuperAdminAuditLogsRoute,
   SuperAdminCouponsRoute: SuperAdminCouponsRoute,
   SuperAdminDashboardRoute: SuperAdminDashboardRoute,
-  SuperAdminFeaturesRoute: SuperAdminFeaturesRoute,
   SuperAdminInvoicesRoute: SuperAdminInvoicesRoute,
   SuperAdminOrganizationsRoute: SuperAdminOrganizationsRoute,
   SuperAdminPaymentsRoute: SuperAdminPaymentsRoute,
