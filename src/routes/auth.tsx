@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { z } from "zod";
 import { motion, type Variants } from "framer-motion";
 import { useAuth } from "@/lib/auth";
-import { API_BASE } from "@/lib/api/client";
+import { api, API_BASE } from "@/lib/api/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -266,6 +266,7 @@ function AuthPage() {
   const [busy, setBusy] = useState(false);
   const [codeMode, setCodeMode] = useState(false);
   const [phoneMode, setPhoneMode] = useState(false);
+  const [phoneOtpEnabled, setPhoneOtpEnabled] = useState(false);
   const [rememberEmail, setRememberEmail] = useState(false);
 
   // OAuth redirect-result state
@@ -288,6 +289,22 @@ function AuthPage() {
     const remembered = localStorage.getItem("erpx_remembered_email");
     if (remembered) setEmail(remembered);
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Only offer phone sign-in when the backend has a real SMS provider configured.
+  useEffect(() => {
+    let active = true;
+    api
+      .get<{ sms?: { enabled?: boolean } }>("/auth/notifications/status")
+      .then((status) => {
+        if (active) setPhoneOtpEnabled(Boolean(status?.sms?.enabled));
+      })
+      .catch(() => {
+        if (active) setPhoneOtpEnabled(false);
+      });
+    return () => {
+      active = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -708,16 +725,18 @@ function AuthPage() {
                             Prefer no password? Get a sign-in code instead
                           </button>
                         </p>
-                        <p>
-                          <button
-                            type="button"
-                            className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-primary"
-                            onClick={() => setPhoneMode(true)}
-                          >
-                            <Phone className="h-3.5 w-3.5" />
-                            Sign in with a phone code
-                          </button>
-                        </p>
+                        {phoneOtpEnabled && (
+                          <p>
+                            <button
+                              type="button"
+                              className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-primary"
+                              onClick={() => setPhoneMode(true)}
+                            >
+                              <Phone className="h-3.5 w-3.5" />
+                              Sign in with a phone code
+                            </button>
+                          </p>
+                        )}
                       </div>
                     )}
                   </div>
