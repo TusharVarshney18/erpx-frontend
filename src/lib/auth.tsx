@@ -75,6 +75,11 @@ export type LoginCodeDelivery = {
   deliveredVia: string;
 };
 
+export type PhoneLoginCodeDelivery = {
+  maskedPhone: string | null;
+  deliveredVia: string;
+};
+
 type MfaStatus = { enabled: boolean; enabledAt: string | null };
 type MfaEnrollResult = { secret: string; otpauthUrl: string };
 type MfaEnrollConfirmResult = { backupCodes: string[] };
@@ -134,6 +139,8 @@ type AuthCtx = {
   completeMfaLogin: (challenge: string, code: string) => Promise<void>;
   requestLoginCode: (email: string) => Promise<LoginCodeDelivery>;
   verifyLoginCode: (email: string, code: string) => Promise<LoginResult>;
+  requestPhoneLoginCode: (phone: string) => Promise<PhoneLoginCodeDelivery>;
+  verifyPhoneLoginCode: (phone: string, code: string) => Promise<LoginResult>;
   completeOAuthLogin: (grant: string) => Promise<LoginResult>;
   mfaStatus: () => Promise<MfaStatus>;
   startMfaEnroll: () => Promise<MfaEnrollResult>;
@@ -147,6 +154,7 @@ type AuthCtx = {
     lastName: string;
     organizationName: string;
     organizationCode: string;
+    phone?: string;
   }) => Promise<SignUpResult>;
   verifyEmail: (email: string, code: string) => Promise<void>;
   resendVerification: (
@@ -172,6 +180,8 @@ const Ctx = createContext<AuthCtx>({
   completeMfaLogin: async () => {},
   requestLoginCode: async () => ({ maskedEmail: null, deliveredVia: "console" }),
   verifyLoginCode: async () => ({ mfaRequired: false, accessToken: "", refreshToken: "" }),
+  requestPhoneLoginCode: async () => ({ maskedPhone: null, deliveredVia: "console" }),
+  verifyPhoneLoginCode: async () => ({ mfaRequired: false, accessToken: "", refreshToken: "" }),
   completeOAuthLogin: async () => ({ mfaRequired: false, accessToken: "", refreshToken: "" }),
   mfaStatus: async () => ({ enabled: false, enabledAt: null }),
   startMfaEnroll: async () => ({ secret: "", otpauthUrl: "" }),
@@ -250,12 +260,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const finalizeAuthenticated = useCallback(
     async (data: { accessToken: string; refreshToken: string }) => {
       setTokens(data.accessToken, data.refreshToken);
-      const profile = await api.get<UserProfile>("/auth/me");
-      setUser(profile);
-      setActiveOrganizationId(profile.organization.id);
-      await fetchOrganizations();
+      // Fetch profile + organizations in parallel to avoid a sequential
+      // round-trip waterfall right after login.
+      await Promise.all([fetchMe(), fetchOrganizations()]);
     },
-    [fetchOrganizations],
+    [fetchMe, fetchOrganizations],
   );
 
   const signIn = useCallback(
@@ -293,6 +302,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       );
       if (data.mfaRequired) {
         return { mfaRequired: true, mfaChallenge: data.mfaChallenge ?? "", user: { email } };
+      }
+      await finalizeAuthenticated(data);
+      return { mfaRequired: false, accessToken: data.accessToken, refreshToken: data.refreshToken };
+    },
+    [finalizeAuthenticated],
+  );
+
+  const requestPhoneLoginCode = useCallback(async (phone: string) => {
+    return api.post<PhoneLoginCodeDelivery>("/auth/login-otp/request-phone", { phone });
+  }, []);
+
+  const verifyPhoneLoginCode = useCallback(
+    async (phone: string, code: string): Promise<LoginResult> => {
+      const data = await api.post<LoginResponse & { mfaRequired?: boolean; mfaChallenge?: string }>(
+        "/auth/login-otp/verify-phone",
+        { phone, code },
+      );
+      if (data.mfaRequired) {
+        return { mfaRequired: true, mfaChallenge: data.mfaChallenge ?? "", user: { email: "" } };
       }
       await finalizeAuthenticated(data);
       return { mfaRequired: false, accessToken: data.accessToken, refreshToken: data.refreshToken };
@@ -347,6 +375,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       lastName: string;
       organizationName: string;
       organizationCode: string;
+      phone?: string;
     }) => {
       const data = await api.post<RegisterResponse>("/auth/register", input);
       if (data.requiresEmailVerification) {
@@ -437,6 +466,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     completeMfaLogin,
     requestLoginCode,
     verifyLoginCode,
+    requestPhoneLoginCode,
+    verifyPhoneLoginCode,
     completeOAuthLogin,
     mfaStatus,
     startMfaEnroll,

@@ -2,6 +2,24 @@ export const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3001/a
 
 const isBrowser = typeof window !== "undefined";
 
+/** Abort requests that hang (e.g. a cold-started backend) so the UI can recover. */
+const REQUEST_TIMEOUT_MS = 45_000;
+
+async function fetchWithTimeout(input: string, init: RequestInit = {}): Promise<Response> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  try {
+    return await fetch(input, { ...init, signal: controller.signal });
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") {
+      throw new Error("The server took too long to respond. Please try again.");
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 function loadRefreshToken(): string | null {
   if (typeof localStorage !== "undefined") {
     return localStorage.getItem("refreshToken");
@@ -51,7 +69,7 @@ async function refreshAccessToken(): Promise<void> {
   if (refreshPromise) return refreshPromise;
 
   refreshPromise = (async () => {
-    const res = await fetch(`${API_BASE}/auth/refresh`, {
+    const res = await fetchWithTimeout(`${API_BASE}/auth/refresh`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ refreshToken: tokens.refreshToken }),
@@ -99,13 +117,18 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     headers.set("Authorization", `Bearer ${tokens.accessToken}`);
   }
 
-  let res = await fetch(url, { ...fetchOptions, headers });
+  // Only attempt a token refresh when the request actually carried a token.
+  // Unauthenticated calls (e.g. /auth/login) return 401 for bad credentials,
+  // and refreshing there just doubles the latency.
+  const hadAuth = Boolean(tokens.accessToken);
 
-  if (res.status === 401 && tokens.refreshToken) {
+  let res = await fetchWithTimeout(url, { ...fetchOptions, headers });
+
+  if (res.status === 401 && hadAuth && tokens.refreshToken) {
     try {
       await refreshAccessToken();
       headers.set("Authorization", `Bearer ${tokens.accessToken}`);
-      res = await fetch(url, { ...fetchOptions, headers });
+      res = await fetchWithTimeout(url, { ...fetchOptions, headers });
     } catch {
       clearTokens();
       if (isBrowser) {

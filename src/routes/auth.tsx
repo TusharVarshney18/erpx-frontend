@@ -23,6 +23,7 @@ import {
   LogIn,
   Mail,
   Package,
+  Phone,
   ShieldCheck,
   ShoppingCart,
   Sparkles,
@@ -36,6 +37,7 @@ import {
 import { SsoSection } from "@/components/auth/social-buttons";
 import { PasswordStrength } from "@/components/auth/password-strength";
 import { SignInCodePanel } from "@/components/auth/sign-in-code";
+import { SignInPhonePanel } from "@/components/auth/sign-in-phone";
 
 export const Route = createFileRoute("/auth")({
   validateSearch: z.object({
@@ -259,9 +261,11 @@ function AuthPage() {
   const [lastName, setLastName] = useState("");
   const [orgName, setOrgName] = useState("");
   const [orgCode, setOrgCode] = useState("");
+  const [phone, setPhone] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
   const [codeMode, setCodeMode] = useState(false);
+  const [phoneMode, setPhoneMode] = useState(false);
   const [rememberEmail, setRememberEmail] = useState(false);
 
   // OAuth redirect-result state
@@ -380,6 +384,7 @@ function AuthPage() {
         lastName,
         organizationName: orgName,
         organizationCode: orgCode,
+        phone: phone.trim() || undefined,
       });
       if (result.requiresEmailVerification) {
         if (result.deliveredVia === "console") {
@@ -449,7 +454,10 @@ function AuthPage() {
               value={tab}
               onValueChange={(v) => {
                 setTab(v);
-                if (v === "signup") setCodeMode(false);
+                if (v === "signup") {
+                  setCodeMode(false);
+                  setPhoneMode(false);
+                }
               }}
             >
               <TabsList className="grid w-full grid-cols-2 gap-1 rounded-xl bg-muted/80 p-1">
@@ -485,7 +493,7 @@ function AuthPage() {
               <form
                 onSubmit={(e) => {
                   if (isSignUp) return handleSignUp(e);
-                  if (codeMode) {
+                  if (codeMode || phoneMode) {
                     e.preventDefault();
                     return;
                   }
@@ -550,28 +558,49 @@ function AuthPage() {
                       required
                     />
                   </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="signupPhone" className="text-[13px]">
+                      Phone{" "}
+                      <span className="text-muted-foreground">(optional, for SMS sign-in)</span>
+                    </Label>
+                    <div className="relative">
+                      <Phone className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        id="signupPhone"
+                        type="tel"
+                        inputMode="tel"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        placeholder="+91 98765 43210"
+                        autoComplete="tel"
+                        className="h-11 rounded-lg pl-10"
+                      />
+                    </div>
+                  </div>
                 </TabsContent>
 
-                <div className="space-y-1.5">
-                  <Label htmlFor="email" className="text-[13px]">
-                    Email
-                  </Label>
-                  <div className="relative">
-                    <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      id="email"
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="you@company.com"
-                      autoComplete="email"
-                      className="h-11 rounded-lg pl-10"
-                      required
-                    />
+                {!phoneMode && (
+                  <div className="space-y-1.5">
+                    <Label htmlFor="email" className="text-[13px]">
+                      Email
+                    </Label>
+                    <div className="relative">
+                      <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        id="email"
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="you@company.com"
+                        autoComplete="email"
+                        className="h-11 rounded-lg pl-10"
+                        required
+                      />
+                    </div>
                   </div>
-                </div>
+                )}
 
-                {!codeMode && (
+                {!codeMode && !phoneMode && (
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
                       <Label htmlFor="password" className="text-[13px]">
@@ -618,7 +647,15 @@ function AuthPage() {
 
                 {isSignUp && !codeMode && <PasswordStrength password={password} />}
 
-                {codeMode ? (
+                {phoneMode ? (
+                  <SignInPhonePanel
+                    onMfaRequired={(challenge) => {
+                      setMfaChallenge(challenge);
+                      setMfaCode("");
+                    }}
+                    onBack={() => setPhoneMode(false)}
+                  />
+                ) : codeMode ? (
                   <SignInCodePanel
                     email={email}
                     onMfaRequired={(challenge) => {
@@ -660,16 +697,28 @@ function AuthPage() {
                       )}
                     </Button>
                     {!isSignUp && (
-                      <p className="!mt-0 text-center">
-                        <button
-                          type="button"
-                          className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-primary"
-                          onClick={() => setCodeMode(true)}
-                        >
-                          <KeyRound className="h-3.5 w-3.5" />
-                          Prefer no password? Get a sign-in code instead
-                        </button>
-                      </p>
+                      <div className="!mt-0 space-y-2 text-center">
+                        <p>
+                          <button
+                            type="button"
+                            className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-primary"
+                            onClick={() => setCodeMode(true)}
+                          >
+                            <KeyRound className="h-3.5 w-3.5" />
+                            Prefer no password? Get a sign-in code instead
+                          </button>
+                        </p>
+                        <p>
+                          <button
+                            type="button"
+                            className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-primary"
+                            onClick={() => setPhoneMode(true)}
+                          >
+                            <Phone className="h-3.5 w-3.5" />
+                            Sign in with a phone code
+                          </button>
+                        </p>
+                      </div>
                     )}
                   </div>
                 )}
