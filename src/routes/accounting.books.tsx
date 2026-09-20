@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api/client";
@@ -9,12 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Tabs,
-  TabsList,
-  TabsTrigger,
-  TabsContent,
-} from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Table,
   TableBody,
@@ -51,9 +46,18 @@ type DayEntry = {
   voucherTypeName: string;
   postingDate: string;
   description: string | null;
+  referenceType?: string | null;
+  referenceId?: string | null;
+  source?: { type: string; id: string } | null;
   totalDebit: number;
   totalCredit: number;
   lines: { id: string; accountCode: string; accountName: string; debit: number; credit: number }[];
+};
+
+const SOURCE_ROUTES: Record<string, string> = {
+  SALES_INVOICE: "/sales/invoices",
+  VENDOR_BILL: "/purchases/bills",
+  SALES_PAYMENT: "/sales/payments",
 };
 
 function startOfMonth(): string {
@@ -78,6 +82,8 @@ const voucherBadge: Record<string, string> = {
   CREDIT_NOTE: "bg-warning/15 text-warning",
   DEBIT_NOTE: "bg-destructive/15 text-destructive",
   OPENING: "bg-info/15 text-info",
+  SALES: "bg-primary/15 text-primary",
+  PURCHASE: "bg-warning/15 text-warning",
 };
 
 function BooksPage() {
@@ -88,14 +94,24 @@ function BooksPage() {
 
   const params = { dateFrom, dateTo };
 
-  const { data: dayBook, isLoading: dayLoading, isError: dayError, refetch: refetchDay } = useQuery({
+  const {
+    data: dayBook,
+    isLoading: dayLoading,
+    isError: dayError,
+    refetch: refetchDay,
+  } = useQuery({
     queryKey: ["day-book", orgId, dateFrom, dateTo],
     queryFn: () =>
       api.get<DayEntry[]>(`/accounting/organizations/${orgId}/reports/day-book`, { params }),
     enabled: !!orgId,
   });
 
-  const { data: cashBook, isLoading: cashLoading, isError: cashError, refetch: refetchCash } = useQuery({
+  const {
+    data: cashBook,
+    isLoading: cashLoading,
+    isError: cashError,
+    refetch: refetchCash,
+  } = useQuery({
     queryKey: ["cash-book", orgId, dateFrom, dateTo],
     queryFn: () =>
       api.get<{ rows: BookRow[]; totalDebit: number; totalCredit: number; closingBalance: number }>(
@@ -105,7 +121,12 @@ function BooksPage() {
     enabled: !!orgId,
   });
 
-  const { data: bankBook, isLoading: bankLoading, isError: bankError, refetch: refetchBank } = useQuery({
+  const {
+    data: bankBook,
+    isLoading: bankLoading,
+    isError: bankError,
+    refetch: refetchBank,
+  } = useQuery({
     queryKey: ["bank-book", orgId, dateFrom, dateTo],
     queryFn: () =>
       api.get<{ rows: BookRow[]; totalDebit: number; totalCredit: number; closingBalance: number }>(
@@ -120,7 +141,15 @@ function BooksPage() {
     const csv = [header.join(",")];
     rows.forEach((r) =>
       csv.push(
-        [r.voucherNumber, r.voucherType, r.postingDate, `"${(r.description ?? "").replace(/"/g, '""')}"`, r.debit, r.credit, r.runningBalance ?? ""].join(","),
+        [
+          r.voucherNumber,
+          r.voucherType,
+          r.postingDate,
+          `"${(r.description ?? "").replace(/"/g, '""')}"`,
+          r.debit,
+          r.credit,
+          r.runningBalance ?? "",
+        ].join(","),
       ),
     );
     const blob = new Blob([csv.join("\r\n")], { type: "text/csv;charset=utf-8;" });
@@ -151,17 +180,30 @@ function BooksPage() {
 
   return (
     <div className="mx-auto max-w-[1400px] space-y-6">
-      <PageHeader title="Statutory Books" subtitle="Day Book, Cash Book and Bank Book from posted ledgers" />
+      <PageHeader
+        title="Statutory Books"
+        subtitle="Day Book, Cash Book and Bank Book from posted ledgers"
+      />
 
       <Card>
         <CardContent className="flex flex-wrap items-end gap-4 p-4">
           <div className="space-y-1.5">
             <Label className="text-xs">From</Label>
-            <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="h-9" />
+            <Input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className="h-9"
+            />
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs">To</Label>
-            <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="h-9" />
+            <Input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="h-9"
+            />
           </div>
           <Button size="sm" variant="outline" className="h-9 gap-1.5">
             <CalendarRange className="h-4 w-4" /> {dateFrom} → {dateTo}
@@ -193,6 +235,7 @@ function BooksPage() {
                     <TableRow>
                       <TableHead>Voucher #</TableHead>
                       <TableHead>Type</TableHead>
+                      <TableHead>Source</TableHead>
                       <TableHead>Date</TableHead>
                       <TableHead>Narration</TableHead>
                       <TableHead className="text-right">Debit</TableHead>
@@ -205,18 +248,50 @@ function BooksPage() {
                       <TableRow key={entry.id}>
                         <TableCell className="font-mono text-xs">{entry.journalNumber}</TableCell>
                         <TableCell>
-                          <Badge variant="secondary" className={voucherBadge[entry.voucherType] ?? ""}>
+                          <Badge
+                            variant="secondary"
+                            className={voucherBadge[entry.voucherType] ?? ""}
+                          >
                             {entry.voucherTypeName ?? entry.voucherType}
                           </Badge>
                         </TableCell>
-                        <TableCell>{new Date(entry.postingDate).toLocaleDateString("en-IN")}</TableCell>
-                        <TableCell className="max-w-[220px] truncate">{entry.description ?? "—"}</TableCell>
-                        <TableCell className="text-right tabular-nums">{fmt(entry.totalDebit)}</TableCell>
-                        <TableCell className="text-right tabular-nums">{fmt(entry.totalCredit)}</TableCell>
+                        <TableCell>
+                          {entry.source ? (
+                            SOURCE_ROUTES[entry.source.type] ? (
+                              <Link
+                                to={SOURCE_ROUTES[entry.source.type]}
+                                className="text-xs text-primary hover:underline"
+                              >
+                                {entry.source.type.replace(/_/g, " ")}
+                              </Link>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">
+                                {entry.source.type.replace(/_/g, " ")}
+                              </span>
+                            )
+                          ) : (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {new Date(entry.postingDate).toLocaleDateString("en-IN")}
+                        </TableCell>
+                        <TableCell className="max-w-[220px] truncate">
+                          {entry.description ?? "—"}
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          {fmt(entry.totalDebit)}
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          {fmt(entry.totalCredit)}
+                        </TableCell>
                         <TableCell>
                           <div className="flex max-w-[260px] flex-wrap gap-1">
                             {entry.lines.map((l) => (
-                              <span key={l.id} className="truncate rounded bg-muted px-1.5 py-0.5 font-mono text-[10px]">
+                              <span
+                                key={l.id}
+                                className="truncate rounded bg-muted px-1.5 py-0.5 font-mono text-[10px]"
+                              >
                                 {l.accountCode} · {l.accountName}
                               </span>
                             ))}
@@ -281,30 +356,49 @@ function BooksPage() {
                             <TableRow key={r.id}>
                               <TableCell className="font-mono text-xs">{r.voucherNumber}</TableCell>
                               <TableCell>
-                                <Badge variant="secondary" className={voucherBadge[r.voucherType] ?? ""}>
+                                <Badge
+                                  variant="secondary"
+                                  className={voucherBadge[r.voucherType] ?? ""}
+                                >
                                   {r.voucherType}
                                 </Badge>
                               </TableCell>
-                              <TableCell>{new Date(r.postingDate).toLocaleDateString("en-IN")}</TableCell>
-                              <TableCell className="max-w-[220px] truncate">{r.description ?? "—"}</TableCell>
-                              <TableCell className="text-right tabular-nums">{fmt(r.debit)}</TableCell>
-                              <TableCell className="text-right tabular-nums">{fmt(r.credit)}</TableCell>
-                              <TableCell className="text-right tabular-nums">{fmt(r.runningBalance ?? 0)}</TableCell>
+                              <TableCell>
+                                {new Date(r.postingDate).toLocaleDateString("en-IN")}
+                              </TableCell>
+                              <TableCell className="max-w-[220px] truncate">
+                                {r.description ?? "—"}
+                              </TableCell>
+                              <TableCell className="text-right tabular-nums">
+                                {fmt(r.debit)}
+                              </TableCell>
+                              <TableCell className="text-right tabular-nums">
+                                {fmt(r.credit)}
+                              </TableCell>
+                              <TableCell className="text-right tabular-nums">
+                                {fmt(r.runningBalance ?? 0)}
+                              </TableCell>
                             </TableRow>
                           ))}
                         </TableBody>
                       </Table>
                       <div className="grid grid-cols-3 gap-3 border-t border-border p-4 text-sm">
                         <div>
-                          <span className="text-xs text-muted-foreground uppercase">Total Debit</span>
+                          <span className="text-xs text-muted-foreground uppercase">
+                            Total Debit
+                          </span>
                           <p className="font-bold tabular-nums">{fmt(data.totalDebit)}</p>
                         </div>
                         <div>
-                          <span className="text-xs text-muted-foreground uppercase">Total Credit</span>
+                          <span className="text-xs text-muted-foreground uppercase">
+                            Total Credit
+                          </span>
                           <p className="font-bold tabular-nums">{fmt(data.totalCredit)}</p>
                         </div>
                         <div>
-                          <span className="text-xs text-muted-foreground uppercase">Closing Balance</span>
+                          <span className="text-xs text-muted-foreground uppercase">
+                            Closing Balance
+                          </span>
                           <p className="font-bold tabular-nums">{fmt(data.closingBalance)}</p>
                         </div>
                       </div>
