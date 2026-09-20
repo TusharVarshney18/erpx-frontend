@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/auth";
 import { useAccess } from "@/hooks/useAccess";
 import { PageHeader } from "@/components/layout/PageShell";
 import { LedgerSelect } from "@/components/accounting/LedgerSelect";
+import { TransferVoucherForm } from "@/components/accounting/TransferVoucherForm";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -41,8 +42,6 @@ const VOUCHER_TYPES = [
   { value: "payment", label: "Payment" },
   { value: "receipt", label: "Receipt" },
   { value: "contra", label: "Contra" },
-  { value: "credit-note", label: "Credit Note" },
-  { value: "debit-note", label: "Debit Note" },
   { value: "opening", label: "Opening Balance" },
 ];
 
@@ -151,239 +150,267 @@ function VouchersPage() {
         subtitle="Post double-entry transactions (Payment, Receipt, Contra, Notes, Opening)"
       />
 
+      <div className="flex items-center gap-2">
+        <Label>Voucher Type</Label>
+        <Select value={type} onValueChange={setType}>
+          <SelectTrigger className="w-[200px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {VOUCHER_TYPES.map((t) => (
+              <SelectItem key={t.value} value={t.value}>
+                {t.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
-        <Card className="xl:col-span-2">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Scale className="h-4 w-4 text-primary" /> New Voucher
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-              <div className="space-y-1.5">
-                <Label>Voucher Type</Label>
-                <Select value={type} onValueChange={setType}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {VOUCHER_TYPES.map((t) => (
-                      <SelectItem key={t.value} value={t.value}>
-                        {t.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label>Posting Date</Label>
-                <Input
-                  type="date"
-                  value={postingDate}
-                  onChange={(e) => setPostingDate(e.target.value)}
-                />
-              </div>
-              <div className="space-y-1.5 sm:col-span-1 col-span-2">
-                <Label>Description / Narration</Label>
-                <Input
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Narration"
-                />
-              </div>
-            </div>
-
-            <Card className="border-border/60">
-              <CardContent className="p-0">
-                {/* Standard journal format: Date | Particulars | L.F. | Debit | Credit */}
-                <div className="flex items-center justify-between border-b border-border px-3 py-2 text-xs text-muted-foreground">
-                  <span>
-                    Date: <b className="text-foreground">{postingDate}</b>
-                  </span>
-                  <span>Voucher: {type.replace("-", " ").toUpperCase()}</span>
+        {["payment", "receipt", "contra"].includes(type) ? (
+          <div className="xl:col-span-2">
+            <TransferVoucherForm
+              orgId={orgId}
+              mode={type as "payment" | "receipt" | "contra"}
+              onPosted={() => qc.invalidateQueries({ queryKey: ["voucher-history"] })}
+            />
+          </div>
+        ) : (
+          <Card className="xl:col-span-2">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Scale className="h-4 w-4 text-primary" /> New Voucher
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                <div className="space-y-1.5">
+                  <Label>Voucher Type</Label>
+                  <Select value={type} onValueChange={setType}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {VOUCHER_TYPES.map((t) => (
+                        <SelectItem key={t.value} value={t.value}>
+                          {t.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-border text-left text-[11px] uppercase tracking-wide text-muted-foreground">
-                      <th className="p-2 font-medium">Particulars</th>
-                      <th className="w-16 p-2 font-medium">L.F.</th>
-                      <th className="w-32 p-2 text-right font-medium">Debit</th>
-                      <th className="w-32 p-2 text-right font-medium">Credit</th>
-                      <th className="w-10 p-2" />
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {lines.map((l, i) => {
-                      const selected = accountMap.get(l.accountId);
-                      const isDebit = (Number(l.debit) || 0) > 0;
-                      const isCredit = (Number(l.credit) || 0) > 0;
-                      return (
-                        <tr key={i} className="border-b border-border/40 last:border-0 align-top">
-                          <td className="p-1.5">
-                            <div className="flex items-center gap-1">
-                              {isCredit && (
-                                <span className="w-6 text-xs text-muted-foreground">To</span>
-                              )}
-                              <LedgerSelect
-                                orgId={orgId}
-                                value={l.accountId}
-                                onChange={(v) => setLine(i, { accountId: v })}
-                                placeholder="Select ledger…"
-                              />
-                              {isDebit && (
-                                <span className="shrink-0 text-xs font-semibold text-foreground">
-                                  Dr.
-                                </span>
-                              )}
-                            </div>
-                            <Input
-                              value={l.description}
-                              onChange={(e) => setLine(i, { description: e.target.value })}
-                              placeholder="Line narration"
-                              className="mt-1 h-7 text-xs"
-                            />
-                          </td>
-                          <td className="p-1.5 pt-3 font-mono text-xs text-muted-foreground">
-                            {selected?.accountCode ?? ""}
-                          </td>
-                          <td className="p-1.5">
-                            <Input
-                              type="number"
-                              min={0}
-                              value={l.debit}
-                              onChange={(e) => setLine(i, { debit: e.target.value, credit: "" })}
-                              className="h-9 text-right"
-                            />
-                          </td>
-                          <td className="p-1.5">
-                            <Input
-                              type="number"
-                              min={0}
-                              value={l.credit}
-                              onChange={(e) => setLine(i, { credit: e.target.value, debit: "" })}
-                              className="h-9 text-right"
-                            />
-                          </td>
-                          <td className="p-1.5 text-center">
-                            {lines.length > 1 && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7 text-destructive"
-                                onClick={() =>
-                                  setLines((prev) => prev.filter((_, idx) => idx !== i))
-                                }
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </Button>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </CardContent>
-            </Card>
+                <div className="space-y-1.5">
+                  <Label>Posting Date</Label>
+                  <Input
+                    type="date"
+                    value={postingDate}
+                    onChange={(e) => setPostingDate(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5 sm:col-span-1 col-span-2">
+                  <Label>Description / Narration</Label>
+                  <Input
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder="Narration"
+                  />
+                </div>
+              </div>
 
-            {/* Formatted journal entry preview (debits first, credits indented) */}
-            {journalLines.length > 0 && (
-              <Card className="border-border/60 bg-muted/30">
-                <CardContent className="p-4 font-mono text-sm">
-                  <div className="mb-2 flex items-center justify-between border-b border-border pb-1 text-xs text-muted-foreground">
-                    <span className="font-semibold uppercase tracking-wide text-foreground">
-                      Journal Entry
+              <Card className="border-border/60">
+                <CardContent className="p-0">
+                  {/* Standard journal format: Date | Particulars | L.F. | Debit | Credit */}
+                  <div className="flex items-center justify-between border-b border-border px-3 py-2 text-xs text-muted-foreground">
+                    <span>
+                      Date: <b className="text-foreground">{postingDate}</b>
                     </span>
-                    <span>Date: {postingDate}</span>
+                    <span>Voucher: {type.replace("-", " ").toUpperCase()}</span>
                   </div>
-                  <table className="w-full">
+                  <table className="w-full text-sm">
                     <thead>
-                      <tr className="text-left text-[10px] uppercase tracking-wide text-muted-foreground">
-                        <th className="pb-1 font-medium">Particulars</th>
-                        <th className="pb-1 text-right font-medium">Debit</th>
-                        <th className="pb-1 text-right font-medium">Credit</th>
+                      <tr className="border-b border-border text-left text-[11px] uppercase tracking-wide text-muted-foreground">
+                        <th className="p-2 font-medium">Particulars</th>
+                        <th className="w-16 p-2 font-medium">L.F.</th>
+                        <th className="w-32 p-2 text-right font-medium">Debit</th>
+                        <th className="w-32 p-2 text-right font-medium">Credit</th>
+                        <th className="w-10 p-2" />
                       </tr>
                     </thead>
                     <tbody>
-                      {journalLines.map((l, idx) => (
-                        <tr key={idx}>
-                          <td className="py-0.5">
-                            {l.isDebit ? (
-                              <span>{l.accountName} Dr.</span>
-                            ) : (
-                              <span className="pl-6">To {l.accountName}</span>
-                            )}
-                          </td>
-                          <td className="py-0.5 text-right">{l.isDebit ? fmt(l.debit) : ""}</td>
-                          <td className="py-0.5 text-right">{!l.isDebit ? fmt(l.credit) : ""}</td>
-                        </tr>
-                      ))}
-                      <tr className="border-t border-border">
-                        <td className="py-0.5 font-semibold">Total</td>
-                        <td className="py-0.5 text-right font-semibold">{fmt(totals.debit)}</td>
-                        <td className="py-0.5 text-right font-semibold">{fmt(totals.credit)}</td>
-                      </tr>
+                      {lines.map((l, i) => {
+                        const selected = accountMap.get(l.accountId);
+                        const isDebit = (Number(l.debit) || 0) > 0;
+                        const isCredit = (Number(l.credit) || 0) > 0;
+                        return (
+                          <tr key={i} className="border-b border-border/40 last:border-0 align-top">
+                            <td className="p-1.5">
+                              <div className="flex items-center gap-1">
+                                {isCredit && (
+                                  <span className="w-6 text-xs text-muted-foreground">To</span>
+                                )}
+                                <LedgerSelect
+                                  orgId={orgId}
+                                  value={l.accountId}
+                                  onChange={(v) => setLine(i, { accountId: v })}
+                                  placeholder="Select ledger…"
+                                />
+                                {isDebit && (
+                                  <span className="shrink-0 text-xs font-semibold text-foreground">
+                                    Dr.
+                                  </span>
+                                )}
+                              </div>
+                              <Input
+                                value={l.description}
+                                onChange={(e) => setLine(i, { description: e.target.value })}
+                                placeholder="Line narration"
+                                className="mt-1 h-7 text-xs"
+                              />
+                            </td>
+                            <td className="p-1.5 pt-3 font-mono text-xs text-muted-foreground">
+                              {selected?.accountCode ?? ""}
+                            </td>
+                            <td className="p-1.5">
+                              <Input
+                                type="number"
+                                min={0}
+                                value={l.debit}
+                                onChange={(e) => setLine(i, { debit: e.target.value, credit: "" })}
+                                className="h-9 text-right"
+                              />
+                            </td>
+                            <td className="p-1.5">
+                              <Input
+                                type="number"
+                                min={0}
+                                value={l.credit}
+                                onChange={(e) => setLine(i, { credit: e.target.value, debit: "" })}
+                                className="h-9 text-right"
+                              />
+                            </td>
+                            <td className="p-1.5 text-center">
+                              {lines.length > 1 && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 text-destructive"
+                                  onClick={() =>
+                                    setLines((prev) => prev.filter((_, idx) => idx !== i))
+                                  }
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
-                  {description.trim() && (
-                    <div className="mt-1 text-xs text-muted-foreground">({description.trim()})</div>
-                  )}
-                  {!totals.balanced && totals.debit + totals.credit > 0 && (
-                    <div className="mt-1 flex items-center gap-1 text-xs text-amber-600">
-                      <AlertCircle className="h-3.5 w-3.5" /> Debits must equal credits
-                    </div>
-                  )}
                 </CardContent>
               </Card>
-            )}
 
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() =>
-                  setLines((prev) => [
-                    ...prev,
-                    { accountId: "", debit: "", credit: "", description: "" },
-                  ])
-                }
-              >
-                <Plus className="mr-1.5 h-3.5 w-3.5" /> Add Line
-              </Button>
-              <div className="flex items-center gap-4 text-sm">
-                <span>
-                  Dr{" "}
-                  <b className={totals.debit > 0 ? "text-foreground" : "text-muted-foreground"}>
-                    {totals.debit.toLocaleString("en-IN")}
-                  </b>
-                </span>
-                <span>
-                  Cr{" "}
-                  <b className={totals.credit > 0 ? "text-foreground" : "text-muted-foreground"}>
-                    {totals.credit.toLocaleString("en-IN")}
-                  </b>
-                </span>
-                {!totals.balanced && totals.debit + totals.credit > 0 && (
-                  <span className="flex items-center gap-1 text-xs text-amber-600">
-                    <AlertCircle className="h-3.5 w-3.5" /> Not balanced
-                  </span>
-                )}
+              {/* Formatted journal entry preview (debits first, credits indented) */}
+              {journalLines.length > 0 && (
+                <Card className="border-border/60 bg-muted/30">
+                  <CardContent className="p-4 font-mono text-sm">
+                    <div className="mb-2 flex items-center justify-between border-b border-border pb-1 text-xs text-muted-foreground">
+                      <span className="font-semibold uppercase tracking-wide text-foreground">
+                        Journal Entry
+                      </span>
+                      <span>Date: {postingDate}</span>
+                    </div>
+                    <table className="w-full">
+                      <thead>
+                        <tr className="text-left text-[10px] uppercase tracking-wide text-muted-foreground">
+                          <th className="pb-1 font-medium">Particulars</th>
+                          <th className="pb-1 text-right font-medium">Debit</th>
+                          <th className="pb-1 text-right font-medium">Credit</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {journalLines.map((l, idx) => (
+                          <tr key={idx}>
+                            <td className="py-0.5">
+                              {l.isDebit ? (
+                                <span>{l.accountName} Dr.</span>
+                              ) : (
+                                <span className="pl-6">To {l.accountName}</span>
+                              )}
+                            </td>
+                            <td className="py-0.5 text-right">{l.isDebit ? fmt(l.debit) : ""}</td>
+                            <td className="py-0.5 text-right">{!l.isDebit ? fmt(l.credit) : ""}</td>
+                          </tr>
+                        ))}
+                        <tr className="border-t border-border">
+                          <td className="py-0.5 font-semibold">Total</td>
+                          <td className="py-0.5 text-right font-semibold">{fmt(totals.debit)}</td>
+                          <td className="py-0.5 text-right font-semibold">{fmt(totals.credit)}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                    {description.trim() && (
+                      <div className="mt-1 text-xs text-muted-foreground">
+                        ({description.trim()})
+                      </div>
+                    )}
+                    {!totals.balanced && totals.debit + totals.credit > 0 && (
+                      <div className="mt-1 flex items-center gap-1 text-xs text-amber-600">
+                        <AlertCircle className="h-3.5 w-3.5" /> Debits must equal credits
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
+              <div className="flex flex-wrap items-center justify-between gap-3">
                 <Button
-                  className="gradient-primary text-white"
-                  disabled={!totals.balanced || post.isPending}
-                  onClick={() => post.mutate()}
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    setLines((prev) => [
+                      ...prev,
+                      { accountId: "", debit: "", credit: "", description: "" },
+                    ])
+                  }
                 >
-                  {post.isPending ? (
-                    <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-                  ) : (
-                    <Send className="mr-1.5 h-4 w-4" />
-                  )}{" "}
-                  Post Voucher
+                  <Plus className="mr-1.5 h-3.5 w-3.5" /> Add Line
                 </Button>
+                <div className="flex items-center gap-4 text-sm">
+                  <span>
+                    Dr{" "}
+                    <b className={totals.debit > 0 ? "text-foreground" : "text-muted-foreground"}>
+                      {totals.debit.toLocaleString("en-IN")}
+                    </b>
+                  </span>
+                  <span>
+                    Cr{" "}
+                    <b className={totals.credit > 0 ? "text-foreground" : "text-muted-foreground"}>
+                      {totals.credit.toLocaleString("en-IN")}
+                    </b>
+                  </span>
+                  {!totals.balanced && totals.debit + totals.credit > 0 && (
+                    <span className="flex items-center gap-1 text-xs text-amber-600">
+                      <AlertCircle className="h-3.5 w-3.5" /> Not balanced
+                    </span>
+                  )}
+                  <Button
+                    className="gradient-primary text-white"
+                    disabled={!totals.balanced || post.isPending}
+                    onClick={() => post.mutate()}
+                  >
+                    {post.isPending ? (
+                      <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Send className="mr-1.5 h-4 w-4" />
+                    )}{" "}
+                    Post Voucher
+                  </Button>
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardHeader>
