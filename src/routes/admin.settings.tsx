@@ -38,6 +38,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
+import { GST_STATES } from "@/components/invoices/gst";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import {
   Building2,
@@ -96,6 +98,29 @@ type OrgSettings = {
   requireMfa: boolean;
   emailNotifications: boolean;
   inAppNotifications: boolean;
+  // Seller / company profile (printed on invoices)
+  legalName?: string;
+  tradeName?: string;
+  gstin?: string;
+  pan?: string;
+  state?: string;
+  stateCode?: string;
+  addressLine1?: string;
+  addressLine2?: string;
+  city?: string;
+  postalCode?: string;
+  country?: string;
+  phone?: string;
+  email?: string;
+  logoUrl?: string;
+  bankName?: string;
+  bankAccountNo?: string;
+  bankIfsc?: string;
+  bankBranch?: string;
+  invoiceTerms?: string;
+  invoiceFooter?: string;
+  signatoryName?: string;
+  hsnMinDigits?: number;
 };
 
 const DEFAULT_SETTINGS: OrgSettings = {
@@ -109,6 +134,28 @@ const DEFAULT_SETTINGS: OrgSettings = {
   requireMfa: false,
   emailNotifications: true,
   inAppNotifications: true,
+  legalName: "",
+  tradeName: "",
+  gstin: "",
+  pan: "",
+  state: "",
+  stateCode: "",
+  addressLine1: "",
+  addressLine2: "",
+  city: "",
+  postalCode: "",
+  country: "India",
+  phone: "",
+  email: "",
+  logoUrl: "",
+  bankName: "",
+  bankAccountNo: "",
+  bankIfsc: "",
+  bankBranch: "",
+  invoiceTerms: "",
+  invoiceFooter: "",
+  signatoryName: "",
+  hsnMinDigits: 4,
 };
 
 const TIMEZONES = [
@@ -429,6 +476,9 @@ function CompanySettingsPage() {
                   </TabsTrigger>
                   <TabsTrigger value="localization" className="gap-1.5">
                     <Globe className="h-4 w-4" /> Localization
+                  </TabsTrigger>
+                  <TabsTrigger value="profile" className="gap-1.5">
+                    <Building2 className="h-4 w-4" /> Company Profile
                   </TabsTrigger>
                 </TabsList>
 
@@ -827,6 +877,131 @@ function CompanySettingsPage() {
                         <Save className="mr-1.5 h-3.5 w-3.5" />
                       )}
                       Save Localization Settings
+                    </Button>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="profile" className="space-y-5">
+                  <p className="text-sm text-muted-foreground">
+                    These details appear on printed tax invoices.
+                  </p>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-1.5">
+                      <Label>Legal Name</Label>
+                      <Input value={settings.legalName ?? ""} onChange={(e) => updateSetting("legalName", e.target.value)} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Trade Name</Label>
+                      <Input value={settings.tradeName ?? ""} onChange={(e) => updateSetting("tradeName", e.target.value)} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>GSTIN</Label>
+                      <Input value={settings.gstin ?? ""} onChange={(e) => updateSetting("gstin", e.target.value.toUpperCase())} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>PAN</Label>
+                      <Input value={settings.pan ?? ""} onChange={(e) => updateSetting("pan", e.target.value.toUpperCase())} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Minimum HSN Digits</Label>
+                      <Select
+                        value={String(settings.hsnMinDigits ?? 4)}
+                        onValueChange={(v) => updateSetting("hsnMinDigits", Number(v))}
+                      >
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="4">4 digits (turnover up to ₹5 crore)</SelectItem>
+                          <SelectItem value="6">6 digits (turnover above ₹5 crore)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>State (place of business)</Label>
+                      <Select
+                        value={settings.stateCode ?? ""}
+                        onValueChange={(code) => {
+                          updateSetting("stateCode", code);
+                          updateSetting("state", GST_STATES.find((s) => s.code === code)?.name ?? "");
+                        }}
+                      >
+                        <SelectTrigger><SelectValue placeholder="Select state" /></SelectTrigger>
+                        <SelectContent className="max-h-80">
+                          {GST_STATES.map((s) => (
+                            <SelectItem key={s.code} value={s.code}>{s.code} · {s.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>City</Label>
+                      <Input value={settings.city ?? ""} onChange={(e) => updateSetting("city", e.target.value)} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Address Line 1</Label>
+                      <Input value={settings.addressLine1 ?? ""} onChange={(e) => updateSetting("addressLine1", e.target.value)} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Address Line 2</Label>
+                      <Input value={settings.addressLine2 ?? ""} onChange={(e) => updateSetting("addressLine2", e.target.value)} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>PIN Code</Label>
+                      <Input value={settings.postalCode ?? ""} onChange={(e) => updateSetting("postalCode", e.target.value)} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Country</Label>
+                      <Input value={settings.country ?? ""} onChange={(e) => updateSetting("country", e.target.value)} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Phone</Label>
+                      <Input value={settings.phone ?? ""} onChange={(e) => updateSetting("phone", e.target.value)} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Email</Label>
+                      <Input value={settings.email ?? ""} onChange={(e) => updateSetting("email", e.target.value)} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Bank Name</Label>
+                      <Input value={settings.bankName ?? ""} onChange={(e) => updateSetting("bankName", e.target.value)} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Bank Account No.</Label>
+                      <Input value={settings.bankAccountNo ?? ""} onChange={(e) => updateSetting("bankAccountNo", e.target.value)} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>IFSC</Label>
+                      <Input value={settings.bankIfsc ?? ""} onChange={(e) => updateSetting("bankIfsc", e.target.value.toUpperCase())} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Bank Branch</Label>
+                      <Input value={settings.bankBranch ?? ""} onChange={(e) => updateSetting("bankBranch", e.target.value)} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Signatory Name</Label>
+                      <Input value={settings.signatoryName ?? ""} onChange={(e) => updateSetting("signatoryName", e.target.value)} />
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Default Invoice Terms</Label>
+                    <Textarea rows={2} value={settings.invoiceTerms ?? ""} onChange={(e) => updateSetting("invoiceTerms", e.target.value)} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Invoice Footer</Label>
+                    <Input value={settings.invoiceFooter ?? ""} onChange={(e) => updateSetting("invoiceFooter", e.target.value)} />
+                  </div>
+                  <Separator />
+                  <div className="flex justify-end">
+                    <Button
+                      className="gradient-primary text-white"
+                      disabled={saveSettings.isPending}
+                      onClick={() => saveSettings.mutate(settings)}
+                    >
+                      {saveSettings.isPending ? (
+                        <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Save className="mr-1.5 h-3.5 w-3.5" />
+                      )}
+                      Save Company Profile
                     </Button>
                   </div>
                 </TabsContent>

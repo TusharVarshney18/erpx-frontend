@@ -76,7 +76,7 @@ export function ReportPage({ title, subtitle, endpoint, columns }: ReportPagePro
       params.sortOrder = sortOrder;
       if (search) params.search = search;
       const path = orgPath(orgId, endpoint);
-      const res = await api.get<any>(path, { params });
+      const res = await api.get<any>(path, { params, keepMeta: true });
       if (res?.data && res?.meta) return res;
       if (Array.isArray(res)) return { data: res, meta: { total: res.length, page: 1, limit: 50, totalPages: 1 } };
       const rawRows = res?.rows ?? (Array.isArray(res?.data) ? res.data : res) ?? [];

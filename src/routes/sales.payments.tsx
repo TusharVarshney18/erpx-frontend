@@ -2,7 +2,7 @@
 import { DataModule, statusBadge } from "@/lib/crud/DataModule";
 
 export const Route = createFileRoute("/sales/payments")({
-  head: () => ({ meta: [{ title: "Payments â€” Acme ERP" }] }),
+  head: () => ({ meta: [{ title: "Payments - ERPX" }] }),
   component: () => (
     <div className="max-w-[1400px] mx-auto">
       <DataModule
@@ -12,11 +12,17 @@ export const Route = createFileRoute("/sales/payments")({
         newLabel="New Payment"
         searchKeys={["transactionId", "paymentMethod"]}
         fields={[
-          { key: "invoiceId", label: "Invoice ID" },
+          {
+            key: "invoiceId",
+            label: "Invoice",
+            type: "lookup",
+            lookupTable: "invoices",
+            lookupLabelKey: "invoiceNumber",
+          },
           { key: "amount", label: "Amount", type: "number", required: true },
           { key: "paymentMethod", label: "Method" },
           { key: "transactionId", label: "Transaction ID" },
-          { key: "currency", label: "Currency", defaultValue: "USD" },
+          { key: "currency", label: "Currency", defaultValue: "INR" },
           { key: "paidAt", label: "Payment Date", type: "date" },
           {
             key: "gateway",
@@ -31,7 +37,7 @@ export const Route = createFileRoute("/sales/payments")({
             label: "Status",
             type: "select",
             options: ["PENDING", "AUTHORIZED", "CAPTURED", "FAILED", "REFUNDED"],
-            defaultValue: "PENDING",
+            defaultValue: "CAPTURED",
             badge: statusBadge,
           },
         ]}

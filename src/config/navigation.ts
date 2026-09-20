@@ -59,7 +59,7 @@ const createItems = (): NavGroup[] => [
           { title: "Account Groups", url: "/accounting/account-groups", permission: "chart_of_account:read" },
           { title: "Cost Centres", url: "/accounting/cost-centres", permission: "chart_of_account:read" },
           { title: "Vouchers", url: "/accounting/vouchers", permission: "journal_entry:read" },
-          { title: "Ledgers", url: "/accounting/ledgers", permission: "ledger:read" },
+          { title: "General Ledger", url: "/accounting/ledgers", permission: "ledger:read" },
           { title: "Journal Entries", url: "/accounting/journal-entries", permission: "journal_entry:read" },
           { title: "Statutory Books", url: "/accounting/books", permission: "accounting_report:read" },
           { title: "Fiscal Years", url: "/accounting/fiscal-years", permission: "fiscal_year:read" },

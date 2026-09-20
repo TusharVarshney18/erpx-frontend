@@ -10,10 +10,10 @@ export const Route = createFileRoute("/accounting/ledgers")({
         subtitle="Per-account transaction history"
         endpoint="/reports/organizations/{orgId}/general-ledger"
         columns={[
-          { key: "journalNumber", label: "Journal #", sortable: true },
-          { key: "postingDate", label: "Date", type: "date", sortable: true },
-          { key: "accountCode", label: "Account Code" },
-          { key: "accountName", label: "Account Name" },
+          { key: "journalEntry.journalNumber", label: "Journal #" },
+          { key: "journalEntry.postingDate", label: "Date", type: "date" },
+          { key: "account.accountCode", label: "Account Code" },
+          { key: "account.accountName", label: "Account Name" },
           { key: "description", label: "Description" },
           { key: "debit", label: "Debit", type: "number" },
           { key: "credit", label: "Credit", type: "number" },

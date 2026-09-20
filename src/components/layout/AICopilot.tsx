@@ -94,7 +94,7 @@ export function AICopilot() {
                 <span className="h-1.5 w-1.5 rounded-full bg-success" /> AI Assistant
               </div>
             </div>
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setOpen(false)}>
+              <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Close AI Copilot" onClick={() => setOpen(false)}>
               <X className="h-4 w-4" />
             </Button>
           </div>
@@ -176,11 +176,13 @@ export function AICopilot() {
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && send()}
                   placeholder="Ask anything about your business…"
+                  aria-label="Ask the AI copilot"
                   className="h-9 border-0 bg-muted/60 focus-visible:ring-1"
                 />
                 <Button
                   size="icon"
                   className="h-9 w-9 gradient-primary"
+                  aria-label="Send message"
                   onClick={() => send()}
                   disabled={busy || !input.trim()}
                 >

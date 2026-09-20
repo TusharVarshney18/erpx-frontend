@@ -162,7 +162,7 @@ function DefinitionsTab() {
   } = useQuery({
     queryKey: ["workflow-definitions", orgId],
     queryFn: async () => {
-      const res = await api.get<any>(basePath);
+      const res = await api.get<any>(`${basePath}/definitions`);
       return Array.isArray(res) ? res : (res?.data ?? []);
     },
     enabled: !!orgId,
@@ -518,7 +518,7 @@ function ExecutionsTab() {
   const { data: definitions = [] } = useQuery({
     queryKey: ["workflow-definitions", orgId],
     queryFn: async () => {
-      const res = await api.get<any>(basePath);
+      const res = await api.get<any>(`${basePath}/definitions`);
       return Array.isArray(res) ? res : (res?.data ?? []);
     },
     enabled: !!orgId,

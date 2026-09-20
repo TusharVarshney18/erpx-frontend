@@ -2,7 +2,7 @@
 import { DataModule, statusBadge } from "@/lib/crud/DataModule";
 
 export const Route = createFileRoute("/crm/opportunities")({
-  head: () => ({ meta: [{ title: "Opportunities â€” Acme ERP" }] }),
+  head: () => ({ meta: [{ title: "Opportunities - ERPX" }] }),
   component: () => (
     <div className="max-w-[1400px] mx-auto">
       <DataModule
@@ -13,10 +13,17 @@ export const Route = createFileRoute("/crm/opportunities")({
         searchKeys={["title", "description"]}
         fields={[
           { key: "title", label: "Name", required: true },
+          {
+            key: "companyId",
+            label: "Customer",
+            type: "lookup",
+            lookupTable: "customers",
+            lookupLabelKey: "name",
+          },
           { key: "value", label: "Value", type: "number" },
           { key: "probability", label: "Probability %", type: "number" },
           { key: "expectedCloseDate", label: "Expected Close", type: "date" },
-          { key: "currency", label: "Currency", defaultValue: "USD" },
+          { key: "currency", label: "Currency", defaultValue: "INR" },
           {
             key: "status",
             label: "Status",

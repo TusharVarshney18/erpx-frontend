@@ -131,6 +131,20 @@ export type DataModuleProps = {
   permissionPrefix?: string;
   /** Override the create-permission check (e.g. custom create permission). */
   createPermission?: string;
+  /**
+   * Optional custom form. When provided it replaces the built-in generic form
+   * dialog while keeping the same create/update mutation and table behaviour.
+   */
+  formRenderer?: (props: FormRendererProps) => React.ReactNode;
+};
+
+export type FormRendererProps = {
+  open: boolean;
+  onClose: () => void;
+  initial: any | null;
+  busy: boolean;
+  orgId: string | null;
+  onSubmit: (values: any) => void;
 };
 
 function useDebounce<T>(value: T, delay: number): T {
@@ -161,6 +175,7 @@ export function DataModule({
   newLabel,
   permissionPrefix,
   createPermission,
+  formRenderer,
 }: DataModuleProps) {
   const qc = useQueryClient();
   const { user, activeOrganizationId } = useAuth();
@@ -407,7 +422,7 @@ export function DataModule({
         <div className="relative min-w-0 flex-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search\u2026"
+            placeholder="Search…"
             className="h-9 border-0 bg-muted/50 pl-9 pr-9"
             value={rawSearch}
             onChange={(e) => setRawSearch(e.target.value)}
@@ -415,6 +430,7 @@ export function DataModule({
           {rawSearch && (
             <button
               type="button"
+              aria-label="Clear search"
               className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
               onClick={() => setRawSearch("")}
             >
@@ -570,7 +586,7 @@ export function DataModule({
                       <TableCell onClick={(e) => e.stopPropagation()}>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Open row actions">
                               <MoreHorizontal className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
@@ -642,6 +658,7 @@ export function DataModule({
                 variant="outline"
                 size="icon"
                 className="h-8 w-8"
+                aria-label="First page"
                 disabled={page <= 1}
                 onClick={() => setPage(1)}
               >
@@ -651,6 +668,7 @@ export function DataModule({
                 variant="outline"
                 size="icon"
                 className="h-8 w-8"
+                aria-label="Previous page"
                 disabled={page <= 1}
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
               >
@@ -665,6 +683,7 @@ export function DataModule({
                 variant="outline"
                 size="icon"
                 className="h-8 w-8"
+                aria-label="Next page"
                 disabled={page >= totalPages}
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               >
@@ -674,6 +693,7 @@ export function DataModule({
                 variant="outline"
                 size="icon"
                 className="h-8 w-8"
+                aria-label="Last page"
                 disabled={page >= totalPages}
                 onClick={() => setPage(totalPages)}
               >
@@ -684,19 +704,33 @@ export function DataModule({
         </div>
       )}
 
-      <FormDialog
-        open={openForm}
-        onClose={() => {
-          setOpenForm(false);
-          setEditing(null);
-        }}
-        fields={fields}
-        title={editing ? `Edit ${title.replace(/s$/, "")}` : `New ${title.replace(/s$/, "")}`}
-        initial={editing}
-        busy={upsert.isPending}
-        orgId={orgId}
-        onSubmit={(values) => upsert.mutate(values)}
-      />
+      {formRenderer ? (
+        formRenderer({
+          open: openForm,
+          onClose: () => {
+            setOpenForm(false);
+            setEditing(null);
+          },
+          initial: editing,
+          busy: upsert.isPending,
+          orgId,
+          onSubmit: (values) => upsert.mutate(values),
+        })
+      ) : (
+        <FormDialog
+          open={openForm}
+          onClose={() => {
+            setOpenForm(false);
+            setEditing(null);
+          }}
+          fields={fields}
+          title={editing ? `Edit ${title.replace(/s$/, "")}` : `New ${title.replace(/s$/, "")}`}
+          initial={editing}
+          busy={upsert.isPending}
+          orgId={orgId}
+          onSubmit={(values) => upsert.mutate(values)}
+        />
+      )}
 
       <AlertDialog open={!!confirmDel} onOpenChange={(o) => !o && setConfirmDel(null)}>
         <AlertDialogContent>
@@ -959,12 +993,14 @@ function FormDialog({
                     f.type === "textarea" ? "sm:col-span-2 space-y-1.5" : "space-y-1.5"
                   }
                 >
-                  <Label>
+                  <Label htmlFor={`field-${f.key}`}>
                     {f.label}
                     {f.required && <span className="text-destructive"> *</span>}
                   </Label>
                   {f.type === "textarea" ? (
                     <Textarea
+                      id={`field-${f.key}`}
+                      aria-label={f.label}
                       value={values[f.key] ?? ""}
                       onChange={(e) => updateValue(f.key, e.target.value)}
                       required={f.required}
@@ -974,8 +1010,8 @@ function FormDialog({
                       value={String(values[f.key] ?? "")}
                       onValueChange={(val) => updateValue(f.key, val)}
                     >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select\u2026" />
+                      <SelectTrigger aria-label={f.label}>
+                        <SelectValue placeholder="Select…" />
                       </SelectTrigger>
                       <SelectContent>
                         {(f.options ?? []).map((o) => (
@@ -996,6 +1032,8 @@ function FormDialog({
                     />
                   ) : (
                     <Input
+                      id={`field-${f.key}`}
+                      aria-label={f.label}
                       type={
                         f.type === "number"
                           ? "number"

@@ -159,13 +159,21 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   // Unwrap backend envelope: { success, data, message, meta } -> data
   if (body && typeof body === "object" && "success" in body && "data" in body) {
     const unwrapped = body.data as T;
+    const envelopeMeta =
+      "meta" in body && body.meta && typeof body.meta === "object"
+        ? (body.meta as Record<string, unknown>)
+        : {};
+
     // Keep paginated payloads intact so callers can read meta/totalPages.
-    if (
-      !options.keepMeta &&
-      unwrapped &&
-      typeof unwrapped === "object" &&
-      !Array.isArray(unwrapped)
-    ) {
+    if (options.keepMeta) {
+      if (unwrapped && typeof unwrapped === "object" && !Array.isArray(unwrapped)) {
+        const obj = unwrapped as Record<string, unknown>;
+        return { ...obj, meta: { ...(obj.meta as object), ...envelopeMeta } } as T;
+      }
+      return { data: unwrapped, meta: envelopeMeta } as T;
+    }
+
+    if (unwrapped && typeof unwrapped === "object" && !Array.isArray(unwrapped)) {
       const obj = unwrapped as Record<string, unknown>;
       if ("data" in obj && Array.isArray(obj.data)) {
         return obj.data as T;

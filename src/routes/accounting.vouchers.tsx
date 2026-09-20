@@ -5,15 +5,25 @@ import { api } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth";
 import { useAccess } from "@/hooks/useAccess";
 import { PageHeader } from "@/components/layout/PageShell";
+import { LedgerSelect } from "@/components/accounting/LedgerSelect";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Plus, Trash2, Loader2, Send, Scale, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
@@ -53,17 +63,18 @@ function VouchersPage() {
 
   const { data: accounts = [] } = useQuery({
     queryKey: ["voucher-accounts", orgId],
-    queryFn: () => api.get<Account[]>(`/accounting/organizations/${orgId}/chart-of-accounts?limit=500`),
+    queryFn: () =>
+      api.get<Account[]>(`/accounting/organizations/${orgId}/chart-of-accounts?limit=500`),
     enabled: !!orgId,
   });
-  const accountsList = Array.isArray(accounts) ? accounts : (accounts as any)?.data ?? [];
+  const accountsList = Array.isArray(accounts) ? accounts : ((accounts as any)?.data ?? []);
 
   const { data: history = [] } = useQuery({
     queryKey: ["voucher-history", orgId],
     queryFn: () => api.get<any[]>(`/accounting/organizations/${orgId}/journal-entries?limit=25`),
     enabled: !!orgId && showHistory,
   });
-  const historyList = Array.isArray(history) ? history : (history as any)?.data ?? [];
+  const historyList = Array.isArray(history) ? history : ((history as any)?.data ?? []);
 
   const accountMap = useMemo(() => {
     const map = new Map<string, Account>();
@@ -82,7 +93,9 @@ function VouchersPage() {
    * below (indented, "To …"). Display is auto-sorted regardless of entry order.
    */
   const journalLines = useMemo(() => {
-    const completed = lines.filter((l) => l.accountId && ((Number(l.debit) || 0) > 0 || (Number(l.credit) || 0) > 0));
+    const completed = lines.filter(
+      (l) => l.accountId && ((Number(l.debit) || 0) > 0 || (Number(l.credit) || 0) > 0),
+    );
     const debits = completed.filter((l) => (Number(l.debit) || 0) > 0);
     const credits = completed.filter((l) => (Number(l.credit) || 0) > 0);
     return [...debits, ...credits].map((l) => {
@@ -108,19 +121,24 @@ function VouchersPage() {
       const payload = {
         postingDate,
         description: description.trim() || undefined,
-        lines: lines.map((l) => ({
-          accountId: l.accountId,
-          debit: Number(l.debit) || 0,
-          credit: Number(l.credit) || 0,
-          description: l.description.trim() || undefined,
-        })).filter((l) => l.accountId && (l.debit > 0 || l.credit > 0)),
+        lines: lines
+          .map((l) => ({
+            accountId: l.accountId,
+            debit: Number(l.debit) || 0,
+            credit: Number(l.credit) || 0,
+            description: l.description.trim() || undefined,
+          }))
+          .filter((l) => l.accountId && (l.debit > 0 || l.credit > 0)),
       };
       return api.post(`/accounting/organizations/${orgId}/vouchers/${type}`, payload);
     },
     onSuccess: (data: any) => {
       qc.invalidateQueries({ queryKey: ["voucher-history"] });
       toast.success(`Voucher ${data?.journalNumber ?? ""} posted`);
-      setLines([{ accountId: "", debit: "", credit: "", description: "" }, { accountId: "", debit: "", credit: "", description: "" }]);
+      setLines([
+        { accountId: "", debit: "", credit: "", description: "" },
+        { accountId: "", debit: "", credit: "", description: "" },
+      ]);
       setDescription("");
     },
     onError: (e: any) => toast.error(e.message ?? "Posting failed"),
@@ -128,29 +146,50 @@ function VouchersPage() {
 
   return (
     <div className="max-w-[1400px] mx-auto space-y-6">
-      <PageHeader title="Vouchers" subtitle="Post double-entry transactions (Payment, Receipt, Contra, Notes, Opening)" />
+      <PageHeader
+        title="Vouchers"
+        subtitle="Post double-entry transactions (Payment, Receipt, Contra, Notes, Opening)"
+      />
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
         <Card className="xl:col-span-2">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base"><Scale className="h-4 w-4 text-primary" /> New Voucher</CardTitle>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Scale className="h-4 w-4 text-primary" /> New Voucher
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
               <div className="space-y-1.5">
                 <Label>Voucher Type</Label>
                 <Select value={type} onValueChange={setType}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>{VOUCHER_TYPES.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {VOUCHER_TYPES.map((t) => (
+                      <SelectItem key={t.value} value={t.value}>
+                        {t.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
                 </Select>
               </div>
               <div className="space-y-1.5">
                 <Label>Posting Date</Label>
-                <Input type="date" value={postingDate} onChange={(e) => setPostingDate(e.target.value)} />
+                <Input
+                  type="date"
+                  value={postingDate}
+                  onChange={(e) => setPostingDate(e.target.value)}
+                />
               </div>
               <div className="space-y-1.5 sm:col-span-1 col-span-2">
                 <Label>Description / Narration</Label>
-                <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Narration" />
+                <Input
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Narration"
+                />
               </div>
             </div>
 
@@ -158,7 +197,9 @@ function VouchersPage() {
               <CardContent className="p-0">
                 {/* Standard journal format: Date | Particulars | L.F. | Debit | Credit */}
                 <div className="flex items-center justify-between border-b border-border px-3 py-2 text-xs text-muted-foreground">
-                  <span>Date: <b className="text-foreground">{postingDate}</b></span>
+                  <span>
+                    Date: <b className="text-foreground">{postingDate}</b>
+                  </span>
                   <span>Voucher: {type.replace("-", " ").toUpperCase()}</span>
                 </div>
                 <table className="w-full text-sm">
@@ -180,25 +221,59 @@ function VouchersPage() {
                         <tr key={i} className="border-b border-border/40 last:border-0 align-top">
                           <td className="p-1.5">
                             <div className="flex items-center gap-1">
-                              {(isCredit) && <span className="w-6 text-xs text-muted-foreground">To</span>}
-                              <Select value={l.accountId} onValueChange={(v) => setLine(i, { accountId: v })}>
-                                <SelectTrigger className="h-9"><SelectValue placeholder="Select account…" /></SelectTrigger>
-                                <SelectContent className="max-h-80">
-                                  {accountsList.map((a: Account) => (
-                                    <SelectItem key={a.id} value={a.id}>{a.accountCode} · {a.accountName}</SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                              {isDebit && <span className="shrink-0 text-xs font-semibold text-foreground">Dr.</span>}
+                              {isCredit && (
+                                <span className="w-6 text-xs text-muted-foreground">To</span>
+                              )}
+                              <LedgerSelect
+                                orgId={orgId}
+                                value={l.accountId}
+                                onChange={(v) => setLine(i, { accountId: v })}
+                                placeholder="Select ledger…"
+                              />
+                              {isDebit && (
+                                <span className="shrink-0 text-xs font-semibold text-foreground">
+                                  Dr.
+                                </span>
+                              )}
                             </div>
-                            <Input value={l.description} onChange={(e) => setLine(i, { description: e.target.value })} placeholder="Line narration" className="mt-1 h-7 text-xs" />
+                            <Input
+                              value={l.description}
+                              onChange={(e) => setLine(i, { description: e.target.value })}
+                              placeholder="Line narration"
+                              className="mt-1 h-7 text-xs"
+                            />
                           </td>
-                          <td className="p-1.5 pt-3 font-mono text-xs text-muted-foreground">{selected?.accountCode ?? ""}</td>
-                          <td className="p-1.5"><Input type="number" min={0} value={l.debit} onChange={(e) => setLine(i, { debit: e.target.value, credit: "" })} className="h-9 text-right" /></td>
-                          <td className="p-1.5"><Input type="number" min={0} value={l.credit} onChange={(e) => setLine(i, { credit: e.target.value, debit: "" })} className="h-9 text-right" /></td>
+                          <td className="p-1.5 pt-3 font-mono text-xs text-muted-foreground">
+                            {selected?.accountCode ?? ""}
+                          </td>
+                          <td className="p-1.5">
+                            <Input
+                              type="number"
+                              min={0}
+                              value={l.debit}
+                              onChange={(e) => setLine(i, { debit: e.target.value, credit: "" })}
+                              className="h-9 text-right"
+                            />
+                          </td>
+                          <td className="p-1.5">
+                            <Input
+                              type="number"
+                              min={0}
+                              value={l.credit}
+                              onChange={(e) => setLine(i, { credit: e.target.value, debit: "" })}
+                              className="h-9 text-right"
+                            />
+                          </td>
                           <td className="p-1.5 text-center">
                             {lines.length > 1 && (
-                              <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setLines((prev) => prev.filter((_, idx) => idx !== i))}>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-destructive"
+                                onClick={() =>
+                                  setLines((prev) => prev.filter((_, idx) => idx !== i))
+                                }
+                              >
                                 <Trash2 className="h-3.5 w-3.5" />
                               </Button>
                             )}
@@ -216,7 +291,9 @@ function VouchersPage() {
               <Card className="border-border/60 bg-muted/30">
                 <CardContent className="p-4 font-mono text-sm">
                   <div className="mb-2 flex items-center justify-between border-b border-border pb-1 text-xs text-muted-foreground">
-                    <span className="font-semibold uppercase tracking-wide text-foreground">Journal Entry</span>
+                    <span className="font-semibold uppercase tracking-wide text-foreground">
+                      Journal Entry
+                    </span>
                     <span>Date: {postingDate}</span>
                   </div>
                   <table className="w-full">
@@ -231,9 +308,11 @@ function VouchersPage() {
                       {journalLines.map((l, idx) => (
                         <tr key={idx}>
                           <td className="py-0.5">
-                            {l.isDebit
-                              ? <span>{l.accountName} Dr.</span>
-                              : <span className="pl-6">To {l.accountName}</span>}
+                            {l.isDebit ? (
+                              <span>{l.accountName} Dr.</span>
+                            ) : (
+                              <span className="pl-6">To {l.accountName}</span>
+                            )}
                           </td>
                           <td className="py-0.5 text-right">{l.isDebit ? fmt(l.debit) : ""}</td>
                           <td className="py-0.5 text-right">{!l.isDebit ? fmt(l.credit) : ""}</td>
@@ -250,24 +329,56 @@ function VouchersPage() {
                     <div className="mt-1 text-xs text-muted-foreground">({description.trim()})</div>
                   )}
                   {!totals.balanced && totals.debit + totals.credit > 0 && (
-                    <div className="mt-1 flex items-center gap-1 text-xs text-amber-600"><AlertCircle className="h-3.5 w-3.5" /> Debits must equal credits</div>
+                    <div className="mt-1 flex items-center gap-1 text-xs text-amber-600">
+                      <AlertCircle className="h-3.5 w-3.5" /> Debits must equal credits
+                    </div>
                   )}
                 </CardContent>
               </Card>
             )}
 
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <Button variant="outline" size="sm" onClick={() => setLines((prev) => [...prev, { accountId: "", debit: "", credit: "", description: "" }])}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  setLines((prev) => [
+                    ...prev,
+                    { accountId: "", debit: "", credit: "", description: "" },
+                  ])
+                }
+              >
                 <Plus className="mr-1.5 h-3.5 w-3.5" /> Add Line
               </Button>
               <div className="flex items-center gap-4 text-sm">
-                <span>Dr <b className={totals.debit > 0 ? "text-foreground" : "text-muted-foreground"}>{totals.debit.toLocaleString("en-IN")}</b></span>
-                <span>Cr <b className={totals.credit > 0 ? "text-foreground" : "text-muted-foreground"}>{totals.credit.toLocaleString("en-IN")}</b></span>
+                <span>
+                  Dr{" "}
+                  <b className={totals.debit > 0 ? "text-foreground" : "text-muted-foreground"}>
+                    {totals.debit.toLocaleString("en-IN")}
+                  </b>
+                </span>
+                <span>
+                  Cr{" "}
+                  <b className={totals.credit > 0 ? "text-foreground" : "text-muted-foreground"}>
+                    {totals.credit.toLocaleString("en-IN")}
+                  </b>
+                </span>
                 {!totals.balanced && totals.debit + totals.credit > 0 && (
-                  <span className="flex items-center gap-1 text-xs text-amber-600"><AlertCircle className="h-3.5 w-3.5" /> Not balanced</span>
+                  <span className="flex items-center gap-1 text-xs text-amber-600">
+                    <AlertCircle className="h-3.5 w-3.5" /> Not balanced
+                  </span>
                 )}
-                <Button className="gradient-primary text-white" disabled={!totals.balanced || post.isPending} onClick={() => post.mutate()}>
-                  {post.isPending ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Send className="mr-1.5 h-4 w-4" />} Post Voucher
+                <Button
+                  className="gradient-primary text-white"
+                  disabled={!totals.balanced || post.isPending}
+                  onClick={() => post.mutate()}
+                >
+                  {post.isPending ? (
+                    <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Send className="mr-1.5 h-4 w-4" />
+                  )}{" "}
+                  Post Voucher
                 </Button>
               </div>
             </div>
@@ -281,20 +392,38 @@ function VouchersPage() {
           <CardContent className="p-0">
             <div className="max-h-[420px] divide-y divide-border/50 overflow-y-auto">
               {historyList.length === 0 ? (
-                <div className="px-4 py-10 text-center text-sm text-muted-foreground">No vouchers posted yet.</div>
-              ) : historyList.map((v: any) => (
-                <div key={v.id} className="flex items-center justify-between px-4 py-2.5 text-sm">
-                  <div>
-                    <div className="font-medium">{v.journalNumber}</div>
-                    <div className="text-[11px] text-muted-foreground">{v.voucherType} · {new Date(v.postingDate).toLocaleDateString()}</div>
-                  </div>
-                  <div className="text-xs">{v.description ? v.description.slice(0, 30) : "—"}</div>
-                  <button className="text-xs text-primary hover:underline" onClick={() => setShowHistory((s) => !s)}>view</button>
+                <div className="px-4 py-10 text-center text-sm text-muted-foreground">
+                  No vouchers posted yet.
                 </div>
-              ))}
+              ) : (
+                historyList.map((v: any) => (
+                  <div key={v.id} className="flex items-center justify-between px-4 py-2.5 text-sm">
+                    <div>
+                      <div className="font-medium">{v.journalNumber}</div>
+                      <div className="text-[11px] text-muted-foreground">
+                        {v.voucherType} · {new Date(v.postingDate).toLocaleDateString()}
+                      </div>
+                    </div>
+                    <div className="text-xs">
+                      {v.description ? v.description.slice(0, 30) : "—"}
+                    </div>
+                    <button
+                      className="text-xs text-primary hover:underline"
+                      onClick={() => setShowHistory((s) => !s)}
+                    >
+                      view
+                    </button>
+                  </div>
+                ))
+              )}
             </div>
             <div className="border-t border-border p-3 text-center">
-              <button className="text-xs text-primary hover:underline" onClick={() => setShowHistory(true)}>Refresh history</button>
+              <button
+                className="text-xs text-primary hover:underline"
+                onClick={() => setShowHistory(true)}
+              >
+                Refresh history
+              </button>
             </div>
           </CardContent>
         </Card>
@@ -302,11 +431,20 @@ function VouchersPage() {
 
       <Dialog open={showHistory} onOpenChange={setShowHistory}>
         <DialogContent className="max-w-3xl">
-          <DialogHeader><DialogTitle>Journal Entries / Vouchers</DialogTitle><DialogDescription>Posted vouchers for this organization.</DialogDescription></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>Journal Entries / Vouchers</DialogTitle>
+            <DialogDescription>Posted vouchers for this organization.</DialogDescription>
+          </DialogHeader>
           <div className="max-h-[60vh] overflow-y-auto">
             <table className="w-full text-sm">
               <thead className="sticky top-0 bg-card text-left text-[11px] uppercase text-muted-foreground">
-                <tr><th className="p-2">Number</th><th className="p-2">Type</th><th className="p-2">Date</th><th className="p-2">Description</th><th className="p-2">Status</th></tr>
+                <tr>
+                  <th className="p-2">Number</th>
+                  <th className="p-2">Type</th>
+                  <th className="p-2">Date</th>
+                  <th className="p-2">Description</th>
+                  <th className="p-2">Status</th>
+                </tr>
               </thead>
               <tbody>
                 {historyList.map((v: any) => (
@@ -321,7 +459,11 @@ function VouchersPage() {
               </tbody>
             </table>
           </div>
-          <DialogFooter><Button variant="outline" onClick={() => setShowHistory(false)}>Close</Button></DialogFooter>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowHistory(false)}>
+              Close
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

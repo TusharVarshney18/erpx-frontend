@@ -264,17 +264,23 @@ export function TopHeader() {
         </DropdownMenu>
         )}
 
-        <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => setDark((d) => !d)}>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-9 w-9"
+          aria-label={dark ? "Switch to light theme" : "Switch to dark theme"}
+          onClick={() => setDark((d) => !d)}
+        >
           {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
         </Button>
 
-        <Button variant="ghost" size="icon" className="relative h-9 w-9">
+        <Button variant="ghost" size="icon" className="relative h-9 w-9" aria-label="Messages">
           <MessageSquare className="h-4 w-4" />
         </Button>
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="relative h-9 w-9">
+            <Button variant="ghost" size="icon" className="relative h-9 w-9" aria-label="Notifications">
               <Bell className="h-4 w-4" />
               {unreadCount > 0 && (
                 <Badge className="absolute -right-0.5 -top-0.5 h-4 min-w-4 rounded-full p-0 text-[10px]">

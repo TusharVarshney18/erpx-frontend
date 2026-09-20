@@ -166,6 +166,7 @@ function AuthGate({ children }: { children: ReactNode }) {
   const access = useAccess();
   const location = useLocation();
   const nav = useNavigate();
+  const [slow, setSlow] = useState(false);
   const PUBLIC_AUTH_PATHS = ["/auth", "/verify-email", "/forgot-password", "/reset-password"];
   const isAuthRoute = PUBLIC_AUTH_PATHS.some((p) => location.pathname.startsWith(p));
 
@@ -175,11 +176,49 @@ function AuthGate({ children }: { children: ReactNode }) {
     }
   }, [loading, user, isAuthRoute, nav]);
 
+  // Never leave the user on an infinite spinner: after a short grace period
+  // show a way out.
+  useEffect(() => {
+    if (!loading) {
+      setSlow(false);
+      return;
+    }
+    const t = setTimeout(() => setSlow(true), 10_000);
+    return () => clearTimeout(t);
+  }, [loading]);
+
   if (isAuthRoute) return <Outlet />;
   if (loading || !user) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+      <div className="flex min-h-screen items-center justify-center bg-background px-4">
+        {slow ? (
+          <div className="max-w-sm text-center">
+            <p className="text-sm font-medium">This is taking longer than expected.</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Your session may have expired or the server is waking up.
+            </p>
+            <div className="mt-4 flex justify-center gap-2">
+              <Button variant="outline" onClick={() => window.location.reload()}>
+                Retry
+              </Button>
+              <Button
+                className="gradient-primary text-white"
+                onClick={() => {
+                  try {
+                    localStorage.removeItem("refreshToken");
+                  } catch {
+                    /* ignore */
+                  }
+                  window.location.href = "/auth";
+                }}
+              >
+                Go to sign in
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <Loader2 className="h-6 w-6 animate-spin text-primary" aria-label="Loading" />
+        )}
       </div>
     );
   }
