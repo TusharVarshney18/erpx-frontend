@@ -11,6 +11,13 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Table,
   TableBody,
   TableCell,
@@ -34,7 +41,7 @@ import { Ledger } from "@/components/accounting/ledger-types";
 import { LedgerFormModal } from "@/components/accounting/LedgerFormModal";
 
 export const Route = createFileRoute("/accounting/chart-of-accounts")({
-  head: () => ({ meta: [{ title: "Chart of Accounts � Acme ERP" }] }),
+  head: () => ({ meta: [{ title: "Chart of Accounts — Acme ERP" }] }),
   component: ChartOfAccountsPage,
 });
 
@@ -56,6 +63,7 @@ function ChartOfAccountsPage() {
   const canUpdate = access.canAny(["chart_of_account:update"]);
 
   const [search, setSearch] = useState("");
+  const [groupFilter, setGroupFilter] = useState("ALL");
   const [page, setPage] = useState(1);
   const pageSize = 25;
 
@@ -63,14 +71,22 @@ function ChartOfAccountsPage() {
   const [editing, setEditing] = useState<Ledger | null>(null);
   const [deactivating, setDeactivating] = useState<Ledger | null>(null);
 
+  const { data: groups = [] } = useQuery({
+    queryKey: ["ledger-groups", orgId],
+    queryFn: () =>
+      api.get<{ id: string; name: string }[]>(`/accounting/organizations/${orgId}/account-groups`),
+    enabled: !!orgId,
+  });
+
   const { data, isLoading } = useQuery({
-    queryKey: ["ledgers", orgId, search, page],
+    queryKey: ["ledgers", orgId, search, groupFilter, page],
     queryFn: () =>
       api.get<{ data: Ledger[]; meta: { total: number } }>(
         `/accounting/organizations/${orgId}/chart-of-accounts`,
         {
           params: {
             search,
+            ...(groupFilter !== "ALL" ? { accountGroupId: groupFilter } : {}),
             page: String(page),
             limit: String(pageSize),
             sortBy: "accountCode",
@@ -118,11 +134,11 @@ function ChartOfAccountsPage() {
         }
       />
 
-      <div className="flex items-center gap-2 rounded-xl border border-border bg-card p-2">
+      <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-card p-2">
         <div className="relative min-w-0 flex-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search by name or code�"
+            placeholder="Search by name or code…"
             className="h-9 border-0 bg-muted/50 pl-9"
             value={search}
             onChange={(e) => {
@@ -131,6 +147,25 @@ function ChartOfAccountsPage() {
             }}
           />
         </div>
+        <Select
+          value={groupFilter}
+          onValueChange={(v) => {
+            setGroupFilter(v);
+            setPage(1);
+          }}
+        >
+          <SelectTrigger className="h-9 w-[220px]">
+            <SelectValue placeholder="All groups" />
+          </SelectTrigger>
+          <SelectContent className="max-h-80">
+            <SelectItem value="ALL">All groups</SelectItem>
+            {groups.map((g) => (
+              <SelectItem key={g.id} value={g.id}>
+                {g.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <Card>

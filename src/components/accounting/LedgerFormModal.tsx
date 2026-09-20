@@ -56,6 +56,10 @@ type FormValues = {
   state: string;
   address: string;
   creditDays: string;
+  creditLimit: string;
+  registrationType: string;
+  taxType: string;
+  taxRate: string;
   bankAccountNo: string;
   bankIfsc: string;
   isActive: boolean;
@@ -72,6 +76,10 @@ const EMPTY: FormValues = {
   state: "",
   address: "",
   creditDays: "",
+  creditLimit: "",
+  registrationType: "",
+  taxType: "",
+  taxRate: "",
   bankAccountNo: "",
   bankIfsc: "",
   isActive: true,
@@ -116,6 +124,14 @@ export function LedgerFormModal({
           initial.creditDays === null || initial.creditDays === undefined
             ? ""
             : String(initial.creditDays),
+        creditLimit:
+          initial.creditLimit === null || initial.creditLimit === undefined
+            ? ""
+            : String(initial.creditLimit),
+        registrationType: initial.registrationType ?? "",
+        taxType: initial.taxType ?? "",
+        taxRate:
+          initial.taxRate === null || initial.taxRate === undefined ? "" : String(initial.taxRate),
         bankAccountNo: initial.bankAccountNo ?? "",
         bankIfsc: initial.bankIfsc ?? "",
         isActive: initial.isActive ?? true,
@@ -159,10 +175,16 @@ export function LedgerFormModal({
         payload.state = values.state.trim();
         payload.address = values.address.trim();
         payload.creditDays = values.creditDays === "" ? null : Number(values.creditDays);
+        payload.creditLimit = values.creditLimit === "" ? null : Number(values.creditLimit);
+        payload.registrationType = values.registrationType || null;
       }
       if (kind === "BANK") {
         payload.bankAccountNo = values.bankAccountNo.trim();
         payload.bankIfsc = values.bankIfsc.trim().toUpperCase();
+      }
+      if (kind === "DUTY") {
+        payload.taxType = values.taxType || null;
+        payload.taxRate = values.taxRate === "" ? null : Number(values.taxRate);
       }
       return initial
         ? api.patch<Ledger>(
@@ -294,6 +316,32 @@ export function LedgerFormModal({
                     onChange={(e) => update("creditDays", e.target.value)}
                   />
                 </Field>
+                <Field label="Credit Limit">
+                  <Input
+                    type="number"
+                    min={0}
+                    value={values.creditLimit}
+                    onChange={(e) => update("creditLimit", e.target.value)}
+                  />
+                </Field>
+                <Field label="Registration Type">
+                  <Select
+                    value={values.registrationType || "UNSET"}
+                    onValueChange={(v) => update("registrationType", v === "UNSET" ? "" : v)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select…" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="UNSET">Not set</SelectItem>
+                      {["REGULAR", "COMPOSITION", "UNREGISTERED", "SEZ", "OVERSEAS"].map((r) => (
+                        <SelectItem key={r} value={r}>
+                          {r}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Field>
                 <div className="sm:col-span-2">
                   <Field label="Address">
                     <Textarea
@@ -302,6 +350,41 @@ export function LedgerFormModal({
                     />
                   </Field>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {kind === "DUTY" && (
+            <div className="space-y-3 rounded-lg border border-border p-4">
+              <p className="text-sm font-medium">Duty / Tax Details</p>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field label="Tax Type">
+                  <Select
+                    value={values.taxType || "UNSET"}
+                    onValueChange={(v) => update("taxType", v === "UNSET" ? "" : v)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select…" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="UNSET">Not set</SelectItem>
+                      {["CGST", "SGST", "IGST", "CESS", "TDS", "TCS"].map((t) => (
+                        <SelectItem key={t} value={t}>
+                          {t}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Field>
+                <Field label="Rate %">
+                  <Input
+                    type="number"
+                    step="any"
+                    min={0}
+                    value={values.taxRate}
+                    onChange={(e) => update("taxRate", e.target.value)}
+                  />
+                </Field>
               </div>
             </div>
           )}
