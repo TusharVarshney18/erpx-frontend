@@ -147,14 +147,17 @@ type SignUpResult = {
   deliveredVia?: string;
 };
 
-type SwitchOrgResponse = {
-  accessToken: string;
-  refreshToken: string;
-  expiresAt: string;
-  user: { id: string; email: string; isSuperAdmin?: boolean };
-  session: { id: string; createdAt: string };
-  organization: OrganizationInfo;
-};
+// A pending org-switch step that must be finished on the /auth screen (MFA
+// challenge or mandatory MFA setup). Held in memory (single tab) and consumed
+// by the /auth route on mount.
+type PendingSwitchStep = { kind: "mfa"; challenge: string } | { kind: "mfa-setup" };
+let pendingSwitchStep: PendingSwitchStep | null = null;
+
+export function consumePendingSwitchStep(): PendingSwitchStep | null {
+  const step = pendingSwitchStep;
+  pendingSwitchStep = null;
+  return step;
+}
 
 type AuthCtx = {
   user: UserProfile | null;
@@ -194,7 +197,7 @@ type AuthCtx = {
   resetPassword: (email: string, code: string, newPassword: string) => Promise<void>;
   resendInvite: (email: string) => Promise<OtpDelivery>;
   acceptInvite: (email: string, code: string, password: string) => Promise<void>;
-  switchOrganization: (orgId: string) => Promise<void>;
+  switchOrganization: (orgId: string) => Promise<LoginResult>;
   refreshOrganizations: () => Promise<void>;
 };
 
@@ -229,7 +232,7 @@ const Ctx = createContext<AuthCtx>({
   resetPassword: async () => {},
   resendInvite: async () => ({ maskedEmail: "", expiresInSeconds: 600, deliveredVia: "console" }),
   acceptInvite: async () => {},
-  switchOrganization: async () => {},
+  switchOrganization: async () => ({ step: "done", accessToken: "", refreshToken: "" }),
   refreshOrganizations: async () => {},
 });
 
@@ -513,16 +516,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await api.post<{ message: string }>("/auth/accept-invite", { email, code, password });
   }, []);
 
-  const switchOrganization = useCallback(async (orgId: string) => {
-    const data = await api.post<SwitchOrgResponse>(`/auth/switch-organization/${orgId}`, {});
-    setTokens(data.accessToken, data.refreshToken);
-    setActiveOrganizationId(data.organization.id);
-    const profile = await api.get<UserProfile>("/auth/me");
-    setUser(profile);
-    window.dispatchEvent(
-      new CustomEvent("org-switch", { detail: { orgId: data.organization.id } }),
-    );
-  }, []);
+  const switchOrganization = useCallback(
+    async (orgId: string): Promise<LoginResult> => {
+      const data = await api.post<AuthStepResponse>(`/auth/switch-organization/${orgId}`, {});
+      const result = await resolveAuthStep(data, data.user?.email ?? "");
+      if (result.step === "done") {
+        window.dispatchEvent(new CustomEvent("org-switch", { detail: { orgId } }));
+      } else if (result.step === "mfa") {
+        pendingSwitchStep = { kind: "mfa", challenge: result.mfaChallenge };
+        clearTokens();
+        setUser(null);
+        setActiveOrganizationId(null);
+      } else if (result.step === "mfa-setup") {
+        pendingSwitchStep = { kind: "mfa-setup" };
+        setUser(null);
+        setActiveOrganizationId(null);
+      }
+      return result;
+    },
+    [resolveAuthStep],
+  );
 
   const value: AuthCtx = {
     user,

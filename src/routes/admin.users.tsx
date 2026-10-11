@@ -108,13 +108,19 @@ function UsersPage() {
   const [editingRole, setEditingRole] = useState<User | null>(null);
   const [selectedRoleId, setSelectedRoleId] = useState("");
   const [deactivating, setDeactivating] = useState<User | null>(null);
+  const [revoking, setRevoking] = useState<User | null>(null);
 
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteFirstName, setInviteFirstName] = useState("");
   const [inviteLastName, setInviteLastName] = useState("");
   const [inviteRoleId, setInviteRoleId] = useState("");
 
-  const { data: users = [], isLoading, isError, refetch } = useQuery({
+  const {
+    data: users = [],
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery({
     queryKey: ["admin-users", activeOrganizationId],
     queryFn: () => api.get<User[]>("/auth/users"),
     enabled: !!activeOrganizationId,
@@ -144,7 +150,7 @@ function UsersPage() {
       setInviteLastName("");
       setInviteRoleId("");
     },
-    onError: (e: any) => toast.error(e.message ?? "Invite failed"),
+    onError: (e: Error) => toast.error(e.message ?? "Invite failed"),
   });
 
   const updateRole = useMutation({
@@ -157,7 +163,7 @@ function UsersPage() {
       setEditingRole(null);
       setSelectedRoleId("");
     },
-    onError: (e: any) => toast.error(e.message ?? "Update failed"),
+    onError: (e: Error) => toast.error(e.message ?? "Update failed"),
   });
 
   const deactivateUser = useMutation({
@@ -169,7 +175,30 @@ function UsersPage() {
       toast.success("User deactivated");
       setDeactivating(null);
     },
-    onError: (e: any) => toast.error(e.message ?? "Deactivate failed"),
+    onError: (e: Error) => toast.error(e.message ?? "Deactivate failed"),
+  });
+
+  const resendInvite = useMutation({
+    mutationFn: async (user: User) => {
+      return api.post(`/auth/users/${user.id}/resend-invite`, {});
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin-users"] });
+      toast.success("Invitation resent");
+    },
+    onError: (e: Error) => toast.error(e.message ?? "Resend failed"),
+  });
+
+  const revokeInvite = useMutation({
+    mutationFn: async (user: User) => {
+      return api.post(`/auth/users/${user.id}/revoke-invite`, {});
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin-users"] });
+      toast.success("Invitation revoked");
+      setRevoking(null);
+    },
+    onError: (e: Error) => toast.error(e.message ?? "Revoke failed"),
   });
 
   const filtered = useMemo(() => {
@@ -183,11 +212,9 @@ function UsersPage() {
     );
   }, [users, search]);
 
-  const initials = (u: User) =>
-    `${u.firstName.charAt(0)}${u.lastName.charAt(0)}`.toUpperCase();
+  const initials = (u: User) => `${u.firstName.charAt(0)}${u.lastName.charAt(0)}`.toUpperCase();
 
-  const roleName = (u: User) =>
-    u.userRoles?.length ? u.userRoles[0].role.name : "—";
+  const roleName = (u: User) => (u.userRoles?.length ? u.userRoles[0].role.name : "—");
 
   const formatDate = (d: string | null) =>
     d ? new Date(d).toLocaleDateString("en-IN", { dateStyle: "medium" }) : "—";
@@ -234,9 +261,7 @@ function UsersPage() {
             <div className="flex flex-col items-center gap-3 py-16 text-center">
               <AlertCircle className="h-10 w-10 text-destructive" />
               <p className="font-semibold">Failed to load users</p>
-              <p className="text-sm text-muted-foreground">
-                Check your connection and try again.
-              </p>
+              <p className="text-sm text-muted-foreground">Check your connection and try again.</p>
               <Button variant="outline" size="sm" onClick={() => refetch()}>
                 <RefreshCw className="mr-1.5 h-3.5 w-3.5" /> Retry
               </Button>
@@ -283,9 +308,7 @@ function UsersPage() {
                       <div className="flex items-center gap-3">
                         <Avatar className="h-8 w-8">
                           <AvatarImage src={user.avatarUrl ?? undefined} />
-                          <AvatarFallback className="text-xs">
-                            {initials(user)}
-                          </AvatarFallback>
+                          <AvatarFallback className="text-xs">{initials(user)}</AvatarFallback>
                         </Avatar>
                         <div>
                           <p className="font-medium">
@@ -299,18 +322,13 @@ function UsersPage() {
                     </TableCell>
                     <TableCell className="text-sm">{user.email}</TableCell>
                     <TableCell>
-                      <Badge
-                        variant="secondary"
-                        className="text-xs font-normal"
-                      >
+                      <Badge variant="secondary" className="text-xs font-normal">
                         {roleName(user)}
                       </Badge>
                     </TableCell>
                     <TableCell>
                       <Badge
-                        variant={
-                          user.status === "ACTIVE" ? "default" : "secondary"
-                        }
+                        variant={user.status === "ACTIVE" ? "default" : "secondary"}
                         className={
                           user.status === "ACTIVE"
                             ? "bg-success/15 text-success"
@@ -332,11 +350,7 @@ function UsersPage() {
                     <TableCell>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                          >
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
                             <MoreHorizontal className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
@@ -345,12 +359,23 @@ function UsersPage() {
                             <DropdownMenuItem
                               onClick={() => {
                                 setEditingRole(user);
-                                setSelectedRoleId(
-                                  user.userRoles?.[0]?.role?.id ?? "",
-                                );
+                                setSelectedRoleId(user.userRoles?.[0]?.role?.id ?? "");
                               }}
                             >
                               <Shield className="mr-2 h-4 w-4" /> Change Role
+                            </DropdownMenuItem>
+                          )}
+                          {canUpdate && user.status === "INVITED" && (
+                            <DropdownMenuItem onClick={() => resendInvite.mutate(user)}>
+                              <RefreshCw className="mr-2 h-4 w-4" /> Resend invite
+                            </DropdownMenuItem>
+                          )}
+                          {canUpdate && user.status === "INVITED" && (
+                            <DropdownMenuItem
+                              className="text-destructive"
+                              onClick={() => setRevoking(user)}
+                            >
+                              <Ban className="mr-2 h-4 w-4" /> Revoke invite
                             </DropdownMenuItem>
                           )}
                           {canUpdate && (
@@ -437,10 +462,7 @@ function UsersPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setShowInvite(false)}
-            >
+            <Button variant="outline" onClick={() => setShowInvite(false)}>
               Cancel
             </Button>
             <Button
@@ -453,9 +475,7 @@ function UsersPage() {
               }
               onClick={() => inviteUser.mutate()}
             >
-              {inviteUser.isPending && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              )}
+              {inviteUser.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               <Mail className="mr-1.5 h-4 w-4" />
               Send Invite
             </Button>
@@ -486,10 +506,7 @@ function UsersPage() {
           <div className="py-4">
             <div className="space-y-1.5">
               <Label>New Role</Label>
-              <Select
-                value={selectedRoleId}
-                onValueChange={setSelectedRoleId}
-              >
+              <Select value={selectedRoleId} onValueChange={setSelectedRoleId}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select a role…" />
                 </SelectTrigger>
@@ -524,9 +541,7 @@ function UsersPage() {
                 })
               }
             >
-              {updateRole.isPending && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              )}
+              {updateRole.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Save
             </Button>
           </DialogFooter>
@@ -547,22 +562,47 @@ function UsersPage() {
               <strong>
                 {deactivating?.firstName} {deactivating?.lastName}
               </strong>{" "}
-              ({deactivating?.email}). They will not be able to log in until
-              reactivated.
+              ({deactivating?.email}). They will not be able to log in until reactivated.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground"
-              onClick={() =>
-                deactivating && deactivateUser.mutate(deactivating)
-              }
+              onClick={() => deactivating && deactivateUser.mutate(deactivating)}
             >
-              {deactivateUser.isPending && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              )}
+              {deactivateUser.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Deactivate
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={!!revoking}
+        onOpenChange={(o) => {
+          if (!o) setRevoking(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Revoke invitation?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will revoke the invitation for{" "}
+              <strong>
+                {revoking?.firstName} {revoking?.lastName}
+              </strong>{" "}
+              ({revoking?.email}) and deactivate their account.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground"
+              onClick={() => revoking && revokeInvite.mutate(revoking)}
+            >
+              {revokeInvite.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Revoke
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

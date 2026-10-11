@@ -45,6 +45,7 @@ import {
   ReceiptText,
   Briefcase,
   Scale,
+  type LucideIcon,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { useNavigate } from "@tanstack/react-router";
@@ -65,15 +66,22 @@ function timeAgo(iso: string) {
 
 export function TopHeader() {
   const [dark, setDark] = useState(false);
-  const { user, organizations, activeOrganizationId, signOut, switchOrganization, refreshOrganizations } = useAuth();
+  const {
+    user,
+    organizations,
+    activeOrganizationId,
+    signOut,
+    switchOrganization,
+    refreshOrganizations,
+  } = useAuth();
   const featureAccess = useFeatureAccess();
   const access = useAccess();
   const nav = useNavigate();
 
   const createItems = useMemo(() => {
     const can = access.hasPermission;
-    const items: { to: string; label: string; icon: any }[] = [];
-    const add = (to: string, label: string, icon: any, perms: string[]) => {
+    const items: { to: string; label: string; icon: LucideIcon }[] = [];
+    const add = (to: string, label: string, icon: LucideIcon, perms: string[]) => {
       if (perms.some((p) => can(p))) items.push({ to, label, icon });
     };
     add("/crm/leads", "Lead", UserPlus, ["lead:create"]);
@@ -94,6 +102,7 @@ export function TopHeader() {
   const [orgName, setOrgName] = useState("");
   const [orgCode, setOrgCode] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
+  const [switchingOrgId, setSwitchingOrgId] = useState<string | null>(null);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -138,7 +147,7 @@ export function TopHeader() {
       qc.invalidateQueries({ queryKey: ["notifications-unread"] });
       toast.success("All notifications marked as read");
     },
-    onError: (e: any) => toast.error(e.message ?? "Failed to mark all as read"),
+    onError: (e: Error) => toast.error(e.message ?? "Failed to mark all as read"),
   });
 
   const markRead = useMutation({
@@ -147,7 +156,7 @@ export function TopHeader() {
       qc.invalidateQueries({ queryKey: ["notifications-preview"] });
       qc.invalidateQueries({ queryKey: ["notifications-unread"] });
     },
-    onError: (e: any) => toast.error(e.message ?? "Failed to mark as read"),
+    onError: (e: Error) => toast.error(e.message ?? "Failed to mark as read"),
   });
 
   const unreadCount = unreadData?.count ?? 0;
@@ -165,17 +174,37 @@ export function TopHeader() {
     try {
       await api.post("/organizations", {
         name: orgName.trim(),
-        code: orgCode.trim().toLowerCase().replace(/[^a-z0-9-]/g, ""),
+        code: orgCode
+          .trim()
+          .toLowerCase()
+          .replace(/[^a-z0-9-]/g, ""),
       });
       toast.success("Company created successfully");
       setShowCreateOrg(false);
       setOrgName("");
       setOrgCode("");
       await refreshOrganizations();
-    } catch (e: any) {
-      toast.error(e.message ?? "Failed to create company");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to create company");
     } finally {
       setCreateLoading(false);
+    }
+  };
+
+  const handleSwitch = async (orgId: string) => {
+    if (orgId === activeOrganizationId || switchingOrgId) return;
+    setSwitchingOrgId(orgId);
+    try {
+      const result = await switchOrganization(orgId);
+      if (result.step === "done") {
+        toast.success("Switched company");
+      } else {
+        nav({ to: "/auth" });
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not switch company");
+    } finally {
+      setSwitchingOrgId(null);
     }
   };
 
@@ -202,18 +231,21 @@ export function TopHeader() {
           {organizations.map((org) => (
             <DropdownMenuItem
               key={org.id}
-              onClick={() => {
-                if (org.id !== activeOrganizationId) {
-                  switchOrganization(org.id);
-                }
-              }}
+              disabled={switchingOrgId === org.id}
+              onClick={() => handleSwitch(org.id)}
               className={org.id === activeOrganizationId ? "bg-accent" : ""}
             >
-              <Building2 className="mr-2 h-4 w-4 text-muted-foreground" />
+              {switchingOrgId === org.id ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Building2 className="mr-2 h-4 w-4 text-muted-foreground" />
+              )}
               <div className="flex flex-1 items-center justify-between">
                 <span className="truncate">{org.name}</span>
                 {org.id === activeOrganizationId && (
-                  <Badge variant="secondary" className="ml-2 text-[10px]">Active</Badge>
+                  <Badge variant="secondary" className="ml-2 text-[10px]">
+                    Active
+                  </Badge>
                 )}
               </div>
             </DropdownMenuItem>
@@ -243,25 +275,25 @@ export function TopHeader() {
           <DemoBadge />
         )}
         {createItems.length > 0 && (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              size="sm"
-              className="hidden h-9 gap-1.5 gradient-primary text-white shadow-glow sm:flex"
-            >
-              <Plus className="h-4 w-4" /> <span>Create</span>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-52">
-            <DropdownMenuLabel>Quick Create</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            {createItems.map((item: { to: string; label: string; icon: any }) => (
-              <DropdownMenuItem key={item.to} onClick={() => nav({ to: item.to })}>
-                <item.icon className="mr-2 h-4 w-4" /> {item.label}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                size="sm"
+                className="hidden h-9 gap-1.5 gradient-primary text-white shadow-glow sm:flex"
+              >
+                <Plus className="h-4 w-4" /> <span>Create</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52">
+              <DropdownMenuLabel>Quick Create</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {createItems.map((item: { to: string; label: string; icon: LucideIcon }) => (
+                <DropdownMenuItem key={item.to} onClick={() => nav({ to: item.to })}>
+                  <item.icon className="mr-2 h-4 w-4" /> {item.label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
 
         <Button
@@ -280,7 +312,12 @@ export function TopHeader() {
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="relative h-9 w-9" aria-label="Notifications">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="relative h-9 w-9"
+              aria-label="Notifications"
+            >
               <Bell className="h-4 w-4" />
               {unreadCount > 0 && (
                 <Badge className="absolute -right-0.5 -top-0.5 h-4 min-w-4 rounded-full p-0 text-[10px]">
@@ -335,9 +372,7 @@ export function TopHeader() {
                     <div
                       className={cn(
                         "mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg",
-                        n.isRead
-                          ? "bg-muted text-muted-foreground"
-                          : "bg-primary/10 text-primary",
+                        n.isRead ? "bg-muted text-muted-foreground" : "bg-primary/10 text-primary",
                       )}
                     >
                       <Bell className="h-4 w-4" />
@@ -374,9 +409,7 @@ export function TopHeader() {
                 </AvatarFallback>
               </Avatar>
               <div className="hidden text-left lg:block">
-                <div className="text-xs font-semibold leading-tight">
-                  {displayName}
-                </div>
+                <div className="text-xs font-semibold leading-tight">{displayName}</div>
                 <div className="text-[10px] leading-tight text-muted-foreground">{user?.email}</div>
               </div>
             </Button>
@@ -404,7 +437,16 @@ export function TopHeader() {
         </DropdownMenu>
       </div>
 
-      <Dialog open={showCreateOrg} onOpenChange={(o) => { if (!o) { setShowCreateOrg(false); setOrgName(""); setOrgCode(""); } }}>
+      <Dialog
+        open={showCreateOrg}
+        onOpenChange={(o) => {
+          if (!o) {
+            setShowCreateOrg(false);
+            setOrgName("");
+            setOrgCode("");
+          }
+        }}
+      >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>New Company</DialogTitle>
@@ -424,14 +466,24 @@ export function TopHeader() {
               <Input
                 placeholder="e.g. acme-logistics"
                 value={orgCode}
-                onChange={(e) => setOrgCode(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))}
+                onChange={(e) =>
+                  setOrgCode(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))
+                }
               />
-              <p className="text-xs text-muted-foreground">Lowercase letters, numbers, and hyphens only.</p>
+              <p className="text-xs text-muted-foreground">
+                Lowercase letters, numbers, and hyphens only.
+              </p>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowCreateOrg(false)}>Cancel</Button>
-            <Button className="gradient-primary text-white" disabled={createLoading} onClick={handleCreateOrg}>
+            <Button variant="outline" onClick={() => setShowCreateOrg(false)}>
+              Cancel
+            </Button>
+            <Button
+              className="gradient-primary text-white"
+              disabled={createLoading}
+              onClick={handleCreateOrg}
+            >
               {createLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Create Company
             </Button>

@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router"
 import { useEffect, useRef, useState } from "react";
 import { z } from "zod";
 import { motion, type Variants } from "framer-motion";
-import { useAuth, type OrganizationOption } from "@/lib/auth";
+import { useAuth, consumePendingSwitchStep, type OrganizationOption } from "@/lib/auth";
 import { api, API_BASE } from "@/lib/api/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -295,6 +295,18 @@ function AuthPage() {
     selectionToken: string;
     organizations: OrganizationOption[];
   } | null>(null);
+
+  // An org switch that hit an MFA challenge / mandatory setup returns here.
+  useEffect(() => {
+    const step = consumePendingSwitchStep();
+    if (!step) return;
+    if (step.kind === "mfa") {
+      setMfaChallenge(step.challenge);
+      setMfaCode("");
+    } else {
+      setMfaSetup(true);
+    }
+  }, []);
 
   useEffect(() => {
     if (!loading && user && !mfaSetup) {
