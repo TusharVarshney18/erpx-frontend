@@ -33,6 +33,7 @@ import {
   X,
   type LucideIcon,
 } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
 import { SsoSection } from "@/components/auth/social-buttons";
 import { PasswordStrength } from "@/components/auth/password-strength";
 import { SignInCodePanel } from "@/components/auth/sign-in-code";
@@ -1048,6 +1049,13 @@ function MfaSetupCard({
     }
   };
 
+  const copySecret = () => {
+    if (enroll) {
+      navigator.clipboard?.writeText(enroll.secret);
+      toast.success("Setup key copied");
+    }
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 18, scale: 0.99 }}
@@ -1117,17 +1125,44 @@ function MfaSetupCard({
               </p>
             ) : (
               <>
-                <div className="rounded-lg bg-muted/40 p-3 text-center">
-                  <p className="text-xs text-muted-foreground">Scan with your authenticator app</p>
+                <div className="space-y-4">
+                  <div className="mx-auto w-fit rounded-xl bg-white p-3 shadow-sm">
+                    <QRCodeSVG
+                      value={enroll.otpauthUrl}
+                      size={192}
+                      bgColor="#ffffff"
+                      fgColor="#000000"
+                      level="M"
+                    />
+                  </div>
+                  <p className="text-center text-xs text-muted-foreground">
+                    Scan this QR code with your authenticator app
+                  </p>
+
+                  <div className="rounded-lg border border-border/60 bg-muted/40 p-3">
+                    <p className="text-xs text-muted-foreground">
+                      Can&apos;t scan? Enter this key in your authenticator app
+                    </p>
+                    <div className="mt-2 flex items-center gap-2">
+                      <code className="min-w-0 flex-1 break-all font-mono text-sm tracking-wider">
+                        {(enroll.secret.match(/.{1,4}/g) ?? []).join(" ")}
+                      </code>
+                      <button
+                        type="button"
+                        onClick={copySecret}
+                        className="shrink-0 rounded-md border border-border bg-card px-2.5 py-1 text-xs font-medium text-foreground transition-colors hover:bg-accent"
+                      >
+                        Copy
+                      </button>
+                    </div>
+                  </div>
+
                   <a
                     href={enroll.otpauthUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="mt-1 inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
+                    className="mx-auto flex w-fit items-center gap-1.5 text-xs font-medium text-primary hover:underline sm:hidden"
                   >
-                    <KeyRound className="h-4 w-4" /> Open authenticator setup
+                    <KeyRound className="h-3.5 w-3.5" /> Open in authenticator app
                   </a>
-                  <p className="mt-2 font-mono text-sm tracking-widest">{enroll.secret}</p>
                 </div>
 
                 <form onSubmit={handleConfirm} className="space-y-4">
