@@ -1,4 +1,5 @@
 import { useState } from "react";
+import ReactMarkdown from "react-markdown";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +20,29 @@ import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { UpgradeDialog } from "@/components/billing/upgrade-dialog";
 
 type Msg = { role: "user" | "ai"; text: string };
+
+function friendlyAIMessage(e: unknown): string {
+  const obj = (e ?? {}) as { message?: string; status?: number; statusCode?: number };
+  const msg = String(obj.message ?? "");
+  const status = obj.status ?? obj.statusCode;
+
+  if (/ai is disabled|disabled for this organization/i.test(msg)) {
+    return "AI is turned off for your organization. An admin can enable it in Company Settings.";
+  }
+  if (/monthly ai usage limit|usage limit reached|monthly.*limit/i.test(msg)) {
+    return "Your organization has reached its monthly AI usage limit. It resets next month, or an admin can raise the cap in Company Settings.";
+  }
+  if (/too many ai requests|rate limit|wait a moment/i.test(msg) || status === 429) {
+    return "You're sending requests too quickly. Please wait a moment and try again.";
+  }
+  if (/permission/i.test(msg) || status === 403) {
+    return "You don't have permission to access that data. Ask an admin if you need access.";
+  }
+  if (/provider|not configured|no provider|unavailable/i.test(msg) || status === 503) {
+    return "The AI provider is unavailable right now. Please try again later.";
+  }
+  return "Something went wrong while contacting the AI service. Please try again.";
+}
 
 const examples = [
   { icon: TrendingUp, text: "Show top customers by revenue" },
@@ -50,23 +74,15 @@ export function AICopilot() {
     setBusy(true);
 
     try {
-      const history = messages.map((m) => ({
+      const history = [...messages, { role: "user" as const, text: q }].slice(-10).map((m) => ({
         role: m.role === "ai" ? ("assistant" as const) : ("user" as const),
         content: m.text,
       }));
-      const res = await aiChat([...history, { role: "user" as const, content: q }]);
+      const res = await aiChat(history);
       const reply = res?.message?.content || "I'm sorry, I couldn't generate a response.";
       setMessages((m) => [...m, { role: "ai", text: reply }]);
     } catch (e) {
-      const obj = (e ?? {}) as { message?: string; status?: number; statusCode?: number };
-      const msg = obj.message ?? "";
-      const status = obj.status ?? obj.statusCode;
-      const isProviderMissing =
-        status === 503 || /provider|not configured|no provider|unavailable|503/i.test(msg);
-      const fallback = isProviderMissing
-        ? "AI provider is not configured. Set up an LLM provider (e.g. Ollama or OpenAI) in the backend configuration to enable AI."
-        : "Something went wrong while contacting the AI service. Please try again.";
-      setMessages((m) => [...m, { role: "ai", text: fallback }]);
+      setMessages((m) => [...m, { role: "ai", text: friendlyAIMessage(e) }]);
     } finally {
       setBusy(false);
     }
@@ -94,7 +110,13 @@ export function AICopilot() {
                 <span className="h-1.5 w-1.5 rounded-full bg-success" /> AI Assistant
               </div>
             </div>
-              <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Close AI Copilot" onClick={() => setOpen(false)}>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              aria-label="Close AI Copilot"
+              onClick={() => setOpen(false)}
+            >
               <X className="h-4 w-4" />
             </Button>
           </div>
@@ -126,13 +148,19 @@ export function AICopilot() {
                     className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
                   >
                     <div
-                      className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-3 py-2 text-sm leading-relaxed ${
+                      className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm leading-relaxed ${
                         m.role === "user"
-                          ? "gradient-primary text-white"
+                          ? "gradient-primary whitespace-pre-wrap text-white"
                           : "bg-muted text-foreground"
                       }`}
                     >
-                      {m.text}
+                      {m.role === "user" ? (
+                        m.text
+                      ) : (
+                        <div className="markdown [&_a]:text-primary [&_a]:underline [&_code]:rounded [&_code]:bg-black/10 [&_code]:px-1 [&_code]:py-0.5 [&_li]:ml-4 [&_ol]:list-decimal [&_p:not(:last-child)]:mb-2 [&_pre]:overflow-x-auto [&_pre]:rounded [&_pre]:bg-black/10 [&_pre]:p-2 [&_ul]:list-disc">
+                          <ReactMarkdown>{m.text}</ReactMarkdown>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}

@@ -10,8 +10,12 @@ export type ChatResponse = {
   finishReason: string;
 };
 
-export async function aiChat(messages: AIMessage[]): Promise<ChatResponse> {
-  return api.post<ChatResponse>("/ai/chat", { messages });
+export type CopilotChatResponse = {
+  message: { role: string; content: string };
+};
+
+export async function aiChat(messages: AIMessage[]): Promise<CopilotChatResponse> {
+  return api.post<CopilotChatResponse>("/ai/copilot/chat", { messages });
 }
 
 export async function aiChatWithProvider(

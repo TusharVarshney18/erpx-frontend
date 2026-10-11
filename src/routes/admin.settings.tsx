@@ -55,6 +55,7 @@ import {
   KeyRound,
   Laptop,
   LogOut,
+  Sparkles,
 } from "lucide-react";
 
 export const Route = createFileRoute("/admin/settings")({
@@ -123,6 +124,9 @@ type OrgSettings = {
   invoiceFooter?: string;
   signatoryName?: string;
   hsnMinDigits?: number;
+  aiEnabled?: boolean;
+  aiMonthlyLimit?: number | null;
+  aiMonthlyUsage?: number;
 };
 
 const DEFAULT_SETTINGS: OrgSettings = {
@@ -160,6 +164,9 @@ const DEFAULT_SETTINGS: OrgSettings = {
   invoiceFooter: "",
   signatoryName: "",
   hsnMinDigits: 4,
+  aiEnabled: false,
+  aiMonthlyLimit: null,
+  aiMonthlyUsage: 0,
 };
 
 const TIMEZONES = [
@@ -213,7 +220,8 @@ const NUMBER_FORMATS = [
 
 function CompanySettingsPage() {
   const qc = useQueryClient();
-  const { activeOrganizationId, switchOrganization } = useAuth();
+  const { activeOrganizationId, switchOrganization, user, isSuperAdmin } = useAuth();
+  const isAdmin = user?.isOrgAdmin === true || isSuperAdmin;
 
   const [showCreate, setShowCreate] = useState(false);
   const [editing, setEditing] = useState<Organization | null>(null);
@@ -305,6 +313,17 @@ function CompanySettingsPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["org-settings", activeOrganizationId] });
       toast.success("Settings saved");
+    },
+    onError: (e: any) => toast.error(e.message ?? "Save failed"),
+  });
+
+  const saveAiSettings = useMutation({
+    mutationFn: async (values: { aiEnabled: boolean; aiMonthlyLimit: number | null }) => {
+      return api.patch(`/organizations/${activeOrganizationId}/settings`, values);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["org-settings", activeOrganizationId] });
+      toast.success("AI settings saved");
     },
     onError: (e: any) => toast.error(e.message ?? "Save failed"),
   });
@@ -484,6 +503,11 @@ function CompanySettingsPage() {
                   <TabsTrigger value="profile" className="gap-1.5">
                     <Building2 className="h-4 w-4" /> Company Profile
                   </TabsTrigger>
+                  {isAdmin && (
+                    <TabsTrigger value="ai" className="gap-1.5">
+                      <Sparkles className="h-4 w-4" /> AI Copilot
+                    </TabsTrigger>
+                  )}
                 </TabsList>
 
                 <TabsContent value="general" className="space-y-5">
@@ -1092,6 +1116,67 @@ function CompanySettingsPage() {
                     </Button>
                   </div>
                 </TabsContent>
+
+                {isAdmin && (
+                  <TabsContent value="ai" className="space-y-5">
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between rounded-lg border border-border p-4">
+                        <div>
+                          <p className="text-sm font-medium">Enable AI Copilot</p>
+                          <p className="text-xs text-muted-foreground">
+                            Allow users in this organization to chat with the ERPX Copilot.
+                          </p>
+                        </div>
+                        <Switch
+                          checked={settings.aiEnabled ?? false}
+                          onCheckedChange={(v) => updateSetting("aiEnabled", v)}
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label>Monthly AI Request Cap</Label>
+                        <Input
+                          type="number"
+                          min={0}
+                          value={settings.aiMonthlyLimit ?? ""}
+                          placeholder="Unlimited"
+                          onChange={(e) =>
+                            updateSetting(
+                              "aiMonthlyLimit",
+                              e.target.value === ""
+                                ? null
+                                : Math.max(0, Number(e.target.value) || 0),
+                            )
+                          }
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Monthly usage: {settings.aiMonthlyUsage ?? 0} /{" "}
+                          {settings.aiMonthlyLimit != null ? settings.aiMonthlyLimit : "unlimited"}{" "}
+                          requests
+                        </p>
+                      </div>
+                    </div>
+                    <Separator />
+                    <div className="flex justify-end">
+                      <Button
+                        className="gradient-primary text-white"
+                        disabled={saveAiSettings.isPending}
+                        onClick={() =>
+                          saveAiSettings.mutate({
+                            aiEnabled: settings.aiEnabled ?? false,
+                            aiMonthlyLimit: settings.aiMonthlyLimit ?? null,
+                          })
+                        }
+                      >
+                        {saveAiSettings.isPending ? (
+                          <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Save className="mr-1.5 h-3.5 w-3.5" />
+                        )}
+                        Save AI Settings
+                      </Button>
+                    </div>
+                  </TabsContent>
+                )}
               </Tabs>
             )}
           </CardContent>
