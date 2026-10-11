@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useMemo } from "react";
+import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth";
@@ -10,10 +11,8 @@ import { AIInsightsPanel } from "./components/ai-insights";
 import { ActivityTimeline } from "./components/activity-timeline";
 import { AnalyticsSection } from "./components/analytics-section";
 import { QuickActions } from "./components/quick-actions";
-import { AIAssistant } from "./components/ai-assistant";
-import { ProductivityWidgets } from "./components/productivity-widgets";
-import { CommandPalette } from "@/design-system";
 import { PageTransition, StaggerContainer, StaggerItem } from "@/design-system";
+import { formatINR } from "@/lib/format";
 import {
   AlertCircle,
   RefreshCw,
@@ -25,6 +24,9 @@ import {
   Scale,
   ReceiptText,
   Users,
+  Building2,
+  ArrowUpRight,
+  type LucideIcon,
 } from "lucide-react";
 import { useAccess } from "@/hooks/useAccess";
 import { notificationsApi } from "@/lib/api/notifications";
@@ -44,6 +46,18 @@ interface ExecutiveDashboard {
       labels: string[];
       datasets: { label: string; data: number[]; backgroundColor?: string; borderColor?: string }[];
     };
+  };
+}
+
+interface ChartSeries {
+  labels?: string[];
+  datasets?: { label: string; data: number[] }[];
+}
+
+interface SalesDashboardResponse {
+  charts?: {
+    salesByStatus?: ChartSeries;
+    topProducts?: ChartSeries;
   };
 }
 
@@ -88,19 +102,13 @@ const KPI_DRILL_FALLBACK: Record<string, string> = {
 
 function formatKpiValue(label: string, value: number): string {
   if (label === "Active Employees" || label === "Employees") return value.toLocaleString("en-IN");
-  if (value >= 10_000_000) return `\u20B9${(value / 10_000_000).toFixed(1)}Cr`;
-  if (value >= 100_000) return `\u20B9${(value / 100_000).toFixed(1)}L`;
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    maximumFractionDigits: 0,
-  }).format(value);
+  return formatINR(value);
 }
 
 function formatKpiInsight(label: string, value: number): string {
   if (label === "Active Employees" || label === "Employees")
     return `${value} employees currently active`;
-  return `Current ${label.toLowerCase()}: \u20B9${(value / 100_000).toFixed(1)}L`;
+  return `Current ${label.toLowerCase()}: ${formatINR(value)}`;
 }
 
 function mapKpi(kpi: BackendKPI): KPI {
@@ -146,6 +154,36 @@ function generateInsights(kpis: BackendKPI[]): AIInsight[] {
   });
 }
 
+const EVENT_LABELS: Record<string, string> = {
+  "journal_entry.created": "Journal entry created",
+  "journal_entry.updated": "Journal entry updated",
+  "journal_entry.reversed": "Journal entry reversed",
+  "user.invited": "User invited",
+  "user.created": "User created",
+  "user.deactivated": "User deactivated",
+  "invoice.created": "Invoice created",
+  "invoice.sent": "Invoice sent",
+  "invoice.paid": "Invoice paid",
+  "payment.received": "Payment received",
+  "purchase_order.created": "Purchase order created",
+  "sales_order.created": "Sales order created",
+  "quotation.created": "Quotation created",
+  "lead.created": "Lead created",
+  "customer.created": "Customer created",
+  "product.created": "Product created",
+  "employee.created": "Employee created",
+};
+
+/** Turn a raw audit event key into a readable label. */
+function formatEventLabel(raw: unknown): string {
+  const key = typeof raw === "string" ? raw.trim() : "";
+  if (!key) return "Activity";
+  const known = EVENT_LABELS[key.toLowerCase()];
+  if (known) return known;
+  const words = key.replace(/[._]+/g, " ").replace(/\s+/g, " ").trim();
+  return words.charAt(0).toUpperCase() + words.slice(1);
+}
+
 function mapAuditLog(event: Record<string, unknown>): TimelineEvent {
   const resource = String(event.resource ?? "").toUpperCase();
   const typeMap: Record<string, TimelineEvent["type"]> = {
@@ -170,7 +208,7 @@ function mapAuditLog(event: Record<string, unknown>): TimelineEvent {
   return {
     id: event.id as string,
     time: formatRelativeTime(event.createdAt as string),
-    title: (event.event as string) ?? (event.action as string),
+    title: formatEventLabel(event.event ?? event.action),
     description:
       (event.details as Record<string, string>)?.description ??
       `${event.action} on ${event.resource}`,
@@ -215,7 +253,6 @@ export function DashboardPage() {
   const { user } = useAuth();
   const access = useAccess();
   const orgId = user?.organization?.id;
-  const [commandOpen, setCommandOpen] = useState(false);
 
   const canSeeKpis = access.canAny([
     "invoice:read",
@@ -254,7 +291,8 @@ export function DashboardPage() {
 
   const { data: salesDashboard } = useQuery({
     queryKey: ["sales-dashboard", orgId],
-    queryFn: () => api.get<any>(`/reports/organizations/${orgId}/dashboard/sales`),
+    queryFn: () =>
+      api.get<SalesDashboardResponse>(`/reports/organizations/${orgId}/dashboard/sales`),
     enabled: !!orgId && canSeeAnalytics,
     retry: 1,
     staleTime: 60_000,
@@ -277,6 +315,9 @@ export function DashboardPage() {
       })
       .map(mapKpi);
   }, [execData, access]);
+
+  // No transactions yet → show a setup checklist instead of empty ₹0 KPIs.
+  const hasTransactions = useMemo(() => kpis.some((kpi) => Number(kpi.rawValue) > 0), [kpis]);
 
   const insights = useMemo<AIInsight[]>(() => {
     if (!execData?.kpis?.length) return [];
@@ -304,10 +345,8 @@ export function DashboardPage() {
   // Real analytics data (no mock). Empty datasets are hidden by the component.
   // The dashboard endpoints return chart data in { labels, datasets } shape.
   const analytics = useMemo(() => {
-    const statusChart = salesDashboard?.charts?.salesByStatus as
-      { labels: string[]; datasets: { label: string; data: number[] }[] } | undefined;
-    const topChart = salesDashboard?.charts?.topProducts as
-      { labels: string[]; datasets: { label: string; data: number[] }[] } | undefined;
+    const statusChart = salesDashboard?.charts?.salesByStatus;
+    const topChart = salesDashboard?.charts?.topProducts;
 
     const statusLabels = Array.isArray(statusChart?.labels) ? statusChart.labels : [];
     const statusValues = statusChart?.datasets?.[0]?.data;
@@ -334,8 +373,8 @@ export function DashboardPage() {
   // Permission-filtered quick-create actions.
   const quickActions = useMemo(() => {
     const can = access.hasPermission;
-    const items: { id: string; label: string; icon: any; color: string; to?: string }[] = [];
-    const add = (id: string, label: string, icon: any, to: string, perms: string[]) => {
+    const items: { id: string; label: string; icon: LucideIcon; color: string; to?: string }[] = [];
+    const add = (id: string, label: string, icon: LucideIcon, to: string, perms: string[]) => {
       if (perms.some((p) => can(p))) items.push({ id, label, icon, color: "primary", to });
     };
     add("invoice", "Create Invoice", ReceiptText, "/sales/invoices", ["invoice:create"]);
@@ -357,19 +396,6 @@ export function DashboardPage() {
     return items;
   }, [access]);
 
-  const commandItems = useMemo(() => {
-    const items: { id: string; label: string; description?: string; onClick: () => void }[] = [];
-    for (const kpi of kpis) {
-      items.push({
-        id: kpi.id,
-        label: `View ${kpi.label}`,
-        description: kpi.insight,
-        onClick: () => {},
-      });
-    }
-    return items;
-  }, [kpis]);
-
   const handleAction = useCallback(
     (id: string) => {
       const action = quickActions.find((a) => a.id === id);
@@ -381,89 +407,143 @@ export function DashboardPage() {
   );
 
   return (
-    <>
-      <CommandPalette
-        items={commandItems}
-        open={commandOpen}
-        onClose={() => setCommandOpen(false)}
-      />
-      <PageTransition>
-        <div className="max-w-[1400px] mx-auto">
-          <WelcomeHeader
-            userName={user?.firstName ?? "User"}
-            organization={user?.organization?.name ?? "ERPX"}
-            notificationCount={unreadData?.count ?? 0}
-            onSearch={() => {}}
-            onCommandPalette={() => setCommandOpen(true)}
-            onNotifications={() => {}}
-          />
-          <StaggerContainer className="space-y-8">
-            <StaggerItem>
-              {canSeeKpis && execError && (
-                <div className="mb-4 flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
-                  <AlertCircle className="h-4 w-4 shrink-0" />
-                  <span>Failed to load dashboard data.</span>
-                  <button
-                    onClick={() => refetchExec()}
-                    className="ml-auto flex items-center gap-1 text-xs font-medium hover:underline"
-                  >
-                    <RefreshCw className="h-3 w-3" /> Retry
-                  </button>
-                </div>
-              )}
-              {canSeeKpis ? (
-                execLoading ? (
-                  <DashboardSkeleton />
-                ) : (
-                  <KPICards data={kpis} />
-                )
+    <PageTransition>
+      <div className="max-w-[1400px] mx-auto">
+        <WelcomeHeader
+          userName={user?.firstName ?? "User"}
+          organization={user?.organization?.name ?? "ERPX"}
+          notificationCount={unreadData?.count ?? 0}
+          onAIAssistant={() => window.dispatchEvent(new Event("erpx:open-ai-copilot"))}
+          onNotifications={() => {}}
+        />
+        <StaggerContainer className="space-y-8">
+          <StaggerItem>
+            {canSeeKpis && execError && (
+              <div className="mb-4 flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                <span>Failed to load dashboard data.</span>
+                <button
+                  onClick={() => refetchExec()}
+                  className="ml-auto flex items-center gap-1 text-xs font-medium hover:underline"
+                >
+                  <RefreshCw className="h-3 w-3" /> Retry
+                </button>
+              </div>
+            )}
+            {canSeeKpis ? (
+              execLoading ? (
+                <DashboardSkeleton />
+              ) : execData && !hasTransactions ? (
+                <SetupChecklist />
               ) : (
-                <EmptyDashboard />
-              )}
-            </StaggerItem>
+                <KPICards data={kpis} />
+              )
+            ) : (
+              <EmptyDashboard />
+            )}
+          </StaggerItem>
 
-            {!execLoading && canSeeKpis && (
-              <>
+          {!execLoading && canSeeKpis && hasTransactions && (
+            <>
+              <StaggerItem>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                  <div className="lg:col-span-2">
+                    <AIInsightsPanel insights={insights} />
+                  </div>
+                  {canSeeAudit && (
+                    <div>
+                      <ActivityTimeline events={timelineEvents} />
+                    </div>
+                  )}
+                </div>
+              </StaggerItem>
+
+              {canSeeAnalytics && (
+                <StaggerItem>
+                  <AnalyticsSection
+                    revenueData={chartData ?? []}
+                    salesByCategory={analytics.salesByCategory}
+                    weeklySales={analytics.weeklySales}
+                    customerGrowth={analytics.customerGrowth}
+                  />
+                </StaggerItem>
+              )}
+
+              {quickActions.length > 0 && (
                 <StaggerItem>
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                    <div className="lg:col-span-2">
-                      <AIInsightsPanel insights={insights} />
+                    <div>
+                      <QuickActions actions={quickActions} onAction={handleAction} />
                     </div>
-                    {canSeeAudit && (
-                      <div>
-                        <ActivityTimeline events={timelineEvents} />
-                      </div>
-                    )}
                   </div>
                 </StaggerItem>
+              )}
+            </>
+          )}
+        </StaggerContainer>
+      </div>
+    </PageTransition>
+  );
+}
 
-                {canSeeAnalytics && (
-                  <StaggerItem>
-                    <AnalyticsSection
-                      revenueData={chartData ?? []}
-                      salesByCategory={analytics.salesByCategory}
-                      weeklySales={analytics.weeklySales}
-                      customerGrowth={analytics.customerGrowth}
-                    />
-                  </StaggerItem>
-                )}
+const SETUP_STEPS: { title: string; description: string; to: string; icon: LucideIcon }[] = [
+  {
+    title: "Complete company details",
+    description: "Add your legal name, GSTIN, address and financial year.",
+    to: "/admin/settings",
+    icon: Building2,
+  },
+  {
+    title: "Create your first ledger",
+    description: "Set up the accounts you post transactions against.",
+    to: "/accounting/chart-of-accounts",
+    icon: Scale,
+  },
+  {
+    title: "Create your first invoice",
+    description: "Bill a customer and get paid.",
+    to: "/sales/invoices",
+    icon: ReceiptText,
+  },
+  {
+    title: "Invite a teammate",
+    description: "Bring your team in with the right roles.",
+    to: "/admin/users",
+    icon: Users,
+  },
+];
 
-                {quickActions.length > 0 && (
-                  <StaggerItem>
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                      <div>
-                        <QuickActions actions={quickActions} onAction={handleAction} />
-                      </div>
-                    </div>
-                  </StaggerItem>
-                )}
-              </>
-            )}
-          </StaggerContainer>
-        </div>
-      </PageTransition>
-      <AIAssistant />
-    </>
+function SetupChecklist() {
+  return (
+    <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+      <div className="mb-5">
+        <h2 className="text-lg font-semibold tracking-tight">Get set up in a few steps</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Your organization has no transactions yet. Complete these steps to get started.
+        </p>
+      </div>
+      <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        {SETUP_STEPS.map((step) => (
+          <li key={step.title}>
+            <Link
+              to={step.to as never}
+              className="group flex h-full items-start gap-3 rounded-xl border border-border bg-background p-4 transition-colors hover:border-primary/40 hover:bg-accent/40"
+            >
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
+                <step.icon className="h-4 w-4" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-medium">{step.title}</span>
+                <span className="mt-0.5 block text-xs text-muted-foreground">
+                  {step.description}
+                </span>
+              </span>
+              <ArrowUpRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 

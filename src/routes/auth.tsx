@@ -73,9 +73,9 @@ const FEATURES: { icon: LucideIcon; title: string; desc: string }[] = [
 ];
 
 const METRICS: { value: string; label: string }[] = [
-  { value: "99.9%", label: "Uptime SLA" },
   { value: "10+", label: "Modules included" },
-  { value: "24/7", label: "Expert support" },
+  { value: "5", label: "Core suites" },
+  { value: "INR", label: "GST-ready" },
 ];
 
 const TRUST_POINTS: { icon: LucideIcon; title: string }[] = [
@@ -88,7 +88,7 @@ function AuthShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen bg-background">
       <BrandPanel />
-      <main className="relative flex min-h-screen w-full flex-col justify-center overflow-hidden px-4 py-10 sm:px-8 lg:w-[54%] lg:py-12">
+      <main className="relative flex min-h-screen w-full flex-col justify-center overflow-hidden px-4 py-6 sm:px-8 lg:w-[54%] lg:py-8">
         <div className="pointer-events-none absolute inset-0">
           <div className="absolute -top-40 right-[-12%] h-[28rem] w-[28rem] rounded-full bg-primary/10 blur-3xl" />
           <div className="absolute bottom-[-18%] left-[-8%] h-[26rem] w-[26rem] rounded-full bg-[#6366f1]/10 blur-3xl" />
@@ -124,7 +124,7 @@ function LogoLockup() {
 
 function BrandPanel() {
   return (
-    <aside className="relative hidden w-[46%] shrink-0 flex-col justify-between overflow-hidden bg-sidebar p-10 text-sidebar-foreground lg:flex xl:p-14">
+    <aside className="relative hidden w-[46%] shrink-0 flex-col justify-between overflow-hidden bg-sidebar p-8 text-sidebar-foreground lg:flex xl:p-12">
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute -right-24 -top-24 h-96 w-96 rounded-full bg-[#6366f1]/30 blur-[120px]" />
         <div className="absolute -bottom-32 -left-24 h-[30rem] w-[30rem] rounded-full bg-[#a855f7]/20 blur-[140px]" />
@@ -154,7 +154,7 @@ function BrandPanel() {
           </div>
           <div className="leading-tight">
             <p className="text-lg font-semibold tracking-tight text-white">ERPX</p>
-            <p className="text-xs text-white/50">Enterprise suite</p>
+            <p className="text-xs text-white/70">Enterprise suite</p>
           </div>
         </motion.div>
         <motion.div
@@ -170,19 +170,19 @@ function BrandPanel() {
         variants={container}
         initial="hidden"
         animate="visible"
-        className="relative my-10 space-y-7 xl:my-12"
+        className="relative my-6 space-y-6 xl:my-8"
       >
         <motion.div variants={fadeUp} className="space-y-4">
-          <h1 className="max-w-xl text-[2rem] font-semibold leading-[1.12] tracking-tight text-white xl:text-[2.6rem]">
+          <h1 className="max-w-xl text-[1.75rem] font-semibold leading-[1.14] tracking-tight text-white xl:text-[2.25rem]">
             Run your entire business on <span className="text-sky-300">one platform</span>.
           </h1>
-          <p className="max-w-md text-[15px] leading-relaxed text-white/60">
+          <p className="max-w-md text-[15px] leading-relaxed text-white/75">
             Everything your team needs to sell, bill, track and grow — accounting, sales, inventory,
             CRM and HR in a single source of truth.
           </p>
         </motion.div>
 
-        <motion.ul variants={fadeUp} className="grid grid-cols-1 gap-x-8 gap-y-5 sm:grid-cols-2">
+        <motion.ul variants={fadeUp} className="grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
           {FEATURES.map((f) => (
             <li key={f.title} className="flex items-start gap-3">
               <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-white/10 bg-white/5 text-sky-300">
@@ -190,7 +190,7 @@ function BrandPanel() {
               </span>
               <span>
                 <span className="block text-[13px] font-medium text-white">{f.title}</span>
-                <span className="mt-0.5 block text-xs leading-relaxed text-white/55">{f.desc}</span>
+                <span className="mt-0.5 block text-xs leading-relaxed text-white/70">{f.desc}</span>
               </span>
             </li>
           ))}
@@ -201,13 +201,13 @@ function BrandPanel() {
         variants={container}
         initial="hidden"
         animate="visible"
-        className="relative space-y-6"
+        className="relative space-y-4"
       >
-        <motion.div variants={fadeUp} className="space-y-3">
+        <motion.div variants={fadeUp} className="space-y-2.5">
           {TRUST_POINTS.map((t) => (
             <div
               key={t.title}
-              className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 backdrop-blur"
+              className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 backdrop-blur"
             >
               <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-white/10 bg-white/5 text-sky-300">
                 <t.icon className="h-4 w-4" />
@@ -219,14 +219,14 @@ function BrandPanel() {
 
         <motion.dl
           variants={fadeUp}
-          className="grid grid-cols-3 gap-4 border-t border-white/10 pt-6"
+          className="grid grid-cols-3 gap-4 border-t border-white/10 pt-5"
         >
           {METRICS.map((m) => (
             <div key={m.label}>
               <dd className="text-xl font-semibold tracking-tight text-white xl:text-2xl">
                 {m.value}
               </dd>
-              <dt className="mt-0.5 text-[11px] uppercase tracking-wider text-white/40">
+              <dt className="mt-0.5 text-[11px] uppercase tracking-wider text-white/60">
                 {m.label}
               </dt>
             </div>
@@ -235,14 +235,17 @@ function BrandPanel() {
 
         <motion.p
           variants={fadeUp}
-          className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[11px] text-white/45"
+          className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[11px] font-medium text-white/65"
         >
-          <span className="inline-flex items-center gap-1.5">
-            <ShieldCheck className="h-3.5 w-3.5" /> Bank-grade encryption
-          </span>
-          <span className="inline-flex items-center gap-1.5">
-            <Lock className="h-3.5 w-3.5" /> GDPR compliant
-          </span>
+          <span>Accounting</span>
+          <span aria-hidden>·</span>
+          <span>Sales &amp; Billing</span>
+          <span aria-hidden>·</span>
+          <span>Inventory</span>
+          <span aria-hidden>·</span>
+          <span>CRM</span>
+          <span aria-hidden>·</span>
+          <span>HR</span>
         </motion.p>
       </motion.footer>
     </aside>
@@ -545,7 +548,7 @@ function AuthPage() {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
         >
-          <div className="rounded-2xl border border-border/60 bg-card/80 p-6 shadow-glass backdrop-blur-xl sm:p-8">
+          <div className="rounded-2xl border border-border/60 bg-card/80 p-5 shadow-glass backdrop-blur-xl sm:p-6">
             {oauthNotice && (
               <div className="mb-5 flex items-start gap-3 rounded-xl border border-destructive/30 bg-destructive/5 p-3.5 text-sm">
                 <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
@@ -587,8 +590,8 @@ function AuthPage() {
                 </TabsTrigger>
               </TabsList>
 
-              <div className="mt-7 space-y-1.5">
-                <h2 className="text-2xl font-semibold tracking-tight">
+              <div className="mt-5 space-y-1.5">
+                <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">
                   {isSignUp ? "Create your workspace" : "Welcome back"}
                 </h2>
                 <p className="text-sm leading-relaxed text-muted-foreground">
@@ -609,7 +612,7 @@ function AuthPage() {
                   }
                   return handleSignIn(e);
                 }}
-                className="mt-7 space-y-5"
+                className="mt-5 space-y-4"
               >
                 <TabsContent value="signup" className="m-0 space-y-5">
                   <div className="grid grid-cols-2 gap-3">
@@ -622,7 +625,7 @@ function AuthPage() {
                         value={firstName}
                         onChange={(e) => setFirstName(e.target.value)}
                         placeholder="Jane"
-                        className="h-11 rounded-lg"
+                        className="h-10 rounded-lg"
                         required
                       />
                     </div>
@@ -635,7 +638,7 @@ function AuthPage() {
                         value={lastName}
                         onChange={(e) => setLastName(e.target.value)}
                         placeholder="Doe"
-                        className="h-11 rounded-lg"
+                        className="h-10 rounded-lg"
                         required
                       />
                     </div>
@@ -649,7 +652,7 @@ function AuthPage() {
                       value={orgName}
                       onChange={(e) => setOrgName(e.target.value)}
                       placeholder="Acme Inc"
-                      className="h-11 rounded-lg"
+                      className="h-10 rounded-lg"
                       required
                     />
                   </div>
@@ -664,7 +667,7 @@ function AuthPage() {
                       placeholder="acme-inc"
                       pattern="^[a-z0-9-]+$"
                       title="Lowercase letters, numbers, and hyphens only"
-                      className="h-11 rounded-lg"
+                      className="h-10 rounded-lg"
                       required
                     />
                   </div>
@@ -683,7 +686,7 @@ function AuthPage() {
                         onChange={(e) => setPhone(e.target.value)}
                         placeholder="+91 98765 43210"
                         autoComplete="tel"
-                        className="h-11 rounded-lg pl-10"
+                        className="h-10 rounded-lg pl-10"
                       />
                     </div>
                   </div>
@@ -703,7 +706,7 @@ function AuthPage() {
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="you@company.com"
                         autoComplete="email"
-                        className="h-11 rounded-lg pl-10"
+                        className="h-10 rounded-lg pl-10"
                         required
                       />
                     </div>
@@ -735,7 +738,7 @@ function AuthPage() {
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="Enter your password"
                         autoComplete={isSignUp ? "new-password" : "current-password"}
-                        className="h-11 rounded-lg pl-10 pr-10"
+                        className="h-10 rounded-lg pl-10 pr-10"
                         required
                         minLength={8}
                       />
@@ -803,7 +806,7 @@ function AuthPage() {
                     <Button
                       type="submit"
                       disabled={busy}
-                      className="group h-11 w-full rounded-lg gradient-primary text-base text-white shadow-glow transition-transform duration-200 hover:scale-[1.01] active:scale-[0.99]"
+                      className="group h-10 w-full rounded-lg gradient-primary text-base text-white shadow-glow transition-transform duration-200 hover:scale-[1.01] active:scale-[0.99]"
                     >
                       {busy ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -980,14 +983,14 @@ function MfaCard({
                 autoFocus
                 required
                 maxLength={16}
-                className="h-11 rounded-lg pl-10 text-center text-base tracking-[0.35em]"
+                className="h-10 rounded-lg pl-10 text-center text-base tracking-[0.35em]"
               />
             </div>
           </div>
           <Button
             type="submit"
             disabled={busy}
-            className="group h-11 w-full rounded-lg gradient-primary text-base text-white shadow-glow transition-transform duration-200 hover:scale-[1.01] active:scale-[0.99]"
+            className="group h-10 w-full rounded-lg gradient-primary text-base text-white shadow-glow transition-transform duration-200 hover:scale-[1.01] active:scale-[0.99]"
           >
             {busy ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -1123,7 +1126,7 @@ function MfaSetupCard({
               type="button"
               disabled={!acknowledged}
               onClick={onDone}
-              className="group h-11 w-full rounded-lg gradient-primary text-base text-white shadow-glow disabled:opacity-50"
+              className="group h-10 w-full rounded-lg gradient-primary text-base text-white shadow-glow disabled:opacity-50"
             >
               Continue to dashboard
               <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
@@ -1190,13 +1193,13 @@ function MfaSetupCard({
                       autoFocus
                       required
                       maxLength={6}
-                      className="h-11 rounded-lg text-center text-base tracking-[0.35em]"
+                      className="h-10 rounded-lg text-center text-base tracking-[0.35em]"
                     />
                   </div>
                   <Button
                     type="submit"
                     disabled={busy}
-                    className="group h-11 w-full rounded-lg gradient-primary text-base text-white shadow-glow"
+                    className="group h-10 w-full rounded-lg gradient-primary text-base text-white shadow-glow"
                   >
                     {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : "Verify & enable"}
                   </Button>

@@ -14,7 +14,7 @@ const badgeVariants = cva(
         info: "bg-info/10 text-info border border-info/20",
         outline: "border border-border text-foreground",
         premium: "bg-gradient-to-r from-primary/10 to-ai/10 text-primary border border-primary/20",
-        dot: "bg-background border border-border text-foreground relative pl-5",
+        dot: "bg-background border border-border text-foreground",
       },
       size: {
         default: "px-2.5 py-0.5 text-xs",
@@ -46,7 +46,9 @@ function Badge({ className, variant, size, dot, children, ...props }: BadgeProps
   return (
     <div className={cn(badgeVariants({ variant, size }), className)} {...props}>
       {variant === "dot" && dot && (
-        <span className={cn("absolute left-2 h-1.5 w-1.5 rounded-full", dotColors[dot])} />
+        <span
+          className={cn("mr-1.5 inline-block h-1.5 w-1.5 shrink-0 rounded-full", dotColors[dot])}
+        />
       )}
       {children}
     </div>

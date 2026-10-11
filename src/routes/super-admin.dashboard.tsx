@@ -30,6 +30,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { format } from "date-fns";
+import { formatINR } from "@/lib/format";
 
 export const Route = createFileRoute("/super-admin/dashboard")({
   head: () => ({ meta: [{ title: "Super Admin Dashboard — ERPX" }] }),
@@ -155,12 +156,8 @@ function SuperAdminDashboard() {
   return (
     <div className="max-w-[1400px] mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">
-          Super Admin Dashboard
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Platform-wide overview and system health.
-        </p>
+        <h1 className="text-2xl font-bold tracking-tight">Super Admin Dashboard</h1>
+        <p className="text-sm text-muted-foreground">Platform-wide overview and system health.</p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -177,12 +174,13 @@ function SuperAdminDashboard() {
                 ) : (
                   <div className="flex items-start justify-between">
                     <div className="space-y-1">
-                      <p className="text-xs font-medium text-muted-foreground">
-                        {kpi.label}
-                      </p>
-                      <p className="text-2xl font-bold">
-                        {kpi.prefix ?? ""}
-                        {kpi.value?.toLocaleString("en-IN") ?? "—"}
+                      <p className="text-xs font-medium text-muted-foreground">{kpi.label}</p>
+                      <p className="text-2xl font-bold tabular-nums">
+                        {kpi.value == null
+                          ? "—"
+                          : kpi.prefix === "₹"
+                            ? formatINR(kpi.value)
+                            : kpi.value.toLocaleString("en-IN")}
                       </p>
                     </div>
                     <div className={`grid place-items-center rounded-xl p-2.5 ${kpi.color}`}>
@@ -235,7 +233,7 @@ function SuperAdminDashboard() {
                         fontSize: "12px",
                       }}
                       labelFormatter={(v) => format(new Date(v), "MMM dd, yyyy")}
-                      formatter={(value: number) => [`₹${value.toLocaleString("en-IN")}`, "Revenue"]}
+                      formatter={(value: number) => [formatINR(value), "Revenue"]}
                     />
                     <Area
                       type="monotone"
@@ -277,13 +275,13 @@ function SuperAdminDashboard() {
                   </div>
                   <Badge
                     variant={health.status === "healthy" ? "default" : "destructive"}
-                    className={
-                      health.status === "healthy"
-                        ? "bg-success/15 text-success"
-                        : ""
-                    }
+                    className={health.status === "healthy" ? "bg-success/15 text-success" : ""}
                   >
-                    {health.status === "healthy" ? "Healthy" : health.status === "degraded" ? "Degraded" : "Unhealthy"}
+                    {health.status === "healthy"
+                      ? "Healthy"
+                      : health.status === "degraded"
+                        ? "Degraded"
+                        : "Unhealthy"}
                   </Badge>
                 </div>
                 <div className="space-y-1 text-xs text-muted-foreground">
@@ -309,9 +307,7 @@ function SuperAdminDashboard() {
                         <Database className="h-3.5 w-3.5 text-muted-foreground" />
                         <span className="text-sm">{svc.name}</span>
                       </div>
-                      <span className="text-xs text-muted-foreground">
-                        {svc.latency}ms
-                      </span>
+                      <span className="text-xs text-muted-foreground">{svc.latency}ms</span>
                     </div>
                   ))}
                 </div>
@@ -392,19 +388,27 @@ function SuperAdminDashboard() {
                   <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
                     <div>
                       <p className="text-muted-foreground">Total</p>
-                      <p className="font-semibold">{stats?.payments.total?.toLocaleString("en-IN") ?? "—"}</p>
+                      <p className="font-semibold">
+                        {stats?.payments.total?.toLocaleString("en-IN") ?? "—"}
+                      </p>
                     </div>
                     <div>
                       <p className="text-muted-foreground">Today</p>
-                      <p className="font-semibold">{stats?.payments.today?.toLocaleString("en-IN") ?? "—"}</p>
+                      <p className="font-semibold">
+                        {stats?.payments.today?.toLocaleString("en-IN") ?? "—"}
+                      </p>
                     </div>
                     <div>
                       <p className="text-muted-foreground">This Month</p>
-                      <p className="font-semibold">{stats?.payments.thisMonth?.toLocaleString("en-IN") ?? "—"}</p>
+                      <p className="font-semibold">
+                        {stats?.payments.thisMonth?.toLocaleString("en-IN") ?? "—"}
+                      </p>
                     </div>
                     <div>
                       <p className="text-muted-foreground">Failed</p>
-                      <p className="font-semibold text-destructive">{stats?.payments.failed?.toLocaleString("en-IN") ?? "—"}</p>
+                      <p className="font-semibold text-destructive">
+                        {stats?.payments.failed?.toLocaleString("en-IN") ?? "—"}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -415,19 +419,27 @@ function SuperAdminDashboard() {
                   <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
                     <div>
                       <p className="text-muted-foreground">Total</p>
-                      <p className="font-semibold">₹{stats?.revenue.total?.toLocaleString("en-IN") ?? "—"}</p>
+                      <p className="font-semibold tabular-nums">
+                        {stats?.revenue.total != null ? formatINR(stats.revenue.total) : "—"}
+                      </p>
                     </div>
                     <div>
                       <p className="text-muted-foreground">Net</p>
-                      <p className="font-semibold">₹{stats?.revenue.net?.toLocaleString("en-IN") ?? "—"}</p>
+                      <p className="font-semibold tabular-nums">
+                        {stats?.revenue.net != null ? formatINR(stats.revenue.net) : "—"}
+                      </p>
                     </div>
                     <div>
                       <p className="text-muted-foreground">MRR</p>
-                      <p className="font-semibold">₹{stats?.revenue.mrr?.toLocaleString("en-IN") ?? "—"}</p>
+                      <p className="font-semibold tabular-nums">
+                        {stats?.revenue.mrr != null ? formatINR(stats.revenue.mrr) : "—"}
+                      </p>
                     </div>
                     <div>
                       <p className="text-muted-foreground">ARR</p>
-                      <p className="font-semibold">₹{stats?.revenue.arr?.toLocaleString("en-IN") ?? "—"}</p>
+                      <p className="font-semibold tabular-nums">
+                        {stats?.revenue.arr != null ? formatINR(stats.revenue.arr) : "—"}
+                      </p>
                     </div>
                   </div>
                 </div>

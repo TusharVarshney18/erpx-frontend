@@ -333,7 +333,7 @@ function Page() {
                       </Badge>
                     </TableCell>
                     <TableCell
-                      className={`whitespace-nowrap text-right font-medium ${
+                      className={`whitespace-nowrap text-right font-medium tabular-nums ${
                         t.type === "DEBIT"
                           ? "text-destructive"
                           : t.type === "TRANSFER"

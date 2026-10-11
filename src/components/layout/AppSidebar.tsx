@@ -56,7 +56,7 @@ export function AppSidebar() {
         </div>
       </SidebarHeader>
 
-      <SidebarContent className="px-1.5">
+      <SidebarContent className="min-h-0 flex-1 overflow-y-auto px-1.5 pb-4">
         {groups.map((group) => (
           <SidebarGroup key={group.label}>
             {!collapsed && (
@@ -75,7 +75,7 @@ export function AppSidebar() {
         ))}
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-sidebar-border">
+      <SidebarFooter className="shrink-0 border-t border-sidebar-border">
         {!collapsed ? (
           <div className="rounded-lg bg-sidebar-accent/60 p-3">
             <div className="flex items-center justify-between">
@@ -83,7 +83,9 @@ export function AppSidebar() {
                 {planLabel(access.plan)}
               </span>
               {access.isSuperAdmin && (
-                <Badge variant="secondary" className="text-[9px]">Platform Admin</Badge>
+                <Badge variant="secondary" className="text-[9px]">
+                  Platform Admin
+                </Badge>
               )}
             </div>
             <div className="mt-0.5 text-[10px] text-sidebar-foreground/60">

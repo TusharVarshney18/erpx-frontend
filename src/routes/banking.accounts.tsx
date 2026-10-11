@@ -311,7 +311,7 @@ function Page() {
                         {accountTypeLabel[a.accountType] ?? a.accountType}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-right font-medium">
+                    <TableCell className="text-right font-medium tabular-nums">
                       {formatMoney(a.currentBalance, a.currency)}
                     </TableCell>
                     <TableCell>
@@ -661,7 +661,7 @@ function ViewAccountDialog({
                       {t.description || t.category || "—"}
                     </TableCell>
                     <TableCell
-                      className={`text-right font-medium ${
+                      className={`text-right font-medium tabular-nums ${
                         t.type === "DEBIT"
                           ? "text-destructive"
                           : t.type === "TRANSFER"
@@ -672,7 +672,7 @@ function ViewAccountDialog({
                       {t.type === "DEBIT" ? "−" : t.type === "TRANSFER" ? "⇄ " : "+"}
                       {formatMoney(t.amount, detail?.currency)}
                     </TableCell>
-                    <TableCell className="text-right text-muted-foreground">
+                    <TableCell className="text-right text-muted-foreground tabular-nums">
                       {t.balanceAfter != null
                         ? formatMoney(t.balanceAfter, detail?.currency)
                         : "—"}

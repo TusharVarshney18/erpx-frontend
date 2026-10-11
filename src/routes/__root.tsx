@@ -154,7 +154,7 @@ function RootComponent() {
               <AICopilot />
             </SidebarProvider>
           </AuthGate>
-          <Toaster richColors position="top-right" />
+          <Toaster richColors position="bottom-right" />
         </TooltipProvider>
       </AuthProvider>
     </QueryClientProvider>

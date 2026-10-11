@@ -1,8 +1,7 @@
 "use client";
 
-import { Sparkles, Command, Bell, Moon, Sun } from "lucide-react";
+import { Sparkles, Bell, Moon, Sun } from "lucide-react";
 import { Button } from "@/design-system";
-import { SearchInput } from "@/design-system";
 import { Avatar, AvatarFallback } from "@/design-system";
 import { useState, useEffect } from "react";
 
@@ -10,8 +9,6 @@ interface WelcomeHeaderProps {
   userName: string;
   organization: string;
   notificationCount: number;
-  onSearch?: (query: string) => void;
-  onCommandPalette?: () => void;
   onAIAssistant?: () => void;
   onNotifications?: () => void;
 }
@@ -20,8 +17,6 @@ export function WelcomeHeader({
   userName,
   organization,
   notificationCount,
-  onSearch,
-  onCommandPalette,
   onAIAssistant,
   onNotifications,
 }: WelcomeHeaderProps) {
@@ -86,18 +81,6 @@ export function WelcomeHeader({
             </AvatarFallback>
           </Avatar>
         </div>
-      </div>
-
-      <div className="flex items-center gap-3">
-        <div className="flex-1 max-w-md">
-          <div onClick={onCommandPalette} className="cursor-pointer">
-            <SearchInput placeholder="Search anything..." readOnly />
-          </div>
-        </div>
-        <Button variant="ghost" size="sm" onClick={onCommandPalette} className="hidden sm:flex">
-          <Command className="h-4 w-4" />
-          <span className="text-xs text-muted-foreground ml-1">⌘K</span>
-        </Button>
       </div>
     </div>
   );

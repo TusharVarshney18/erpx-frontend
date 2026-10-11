@@ -1,11 +1,18 @@
-export function formatMoney(value: string | number | null | undefined, currency?: string | null): string {
+import { formatINR } from "@/lib/format";
+
+export function formatMoney(
+  value: string | number | null | undefined,
+  currency?: string | null,
+): string {
   const num = Number(value ?? 0);
-  const formatted = num.toLocaleString("en-IN", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-  if (currency && currency !== "INR") return `${formatted} ${currency}`;
-  return `₹${formatted}`;
+  if (currency && currency !== "INR") {
+    const formatted = num.toLocaleString("en-IN", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+    return `${formatted} ${currency}`;
+  }
+  return formatINR(num, { decimals: 2 });
 }
 
 export function formatNumber(value: string | number | null | undefined): string {

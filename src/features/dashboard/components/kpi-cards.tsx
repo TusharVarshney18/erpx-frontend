@@ -40,7 +40,7 @@ interface KPICardsProps {
 
 export function KPICards({ data }: KPICardsProps) {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+    <div className="grid grid-cols-1 gap-4 mb-8 sm:grid-cols-2 lg:grid-cols-[repeat(auto-fit,minmax(200px,1fr))]">
       {data.map((kpi, i) => (
         <KPICard key={kpi.id} kpi={kpi} index={i} />
       ))}
@@ -60,6 +60,8 @@ function KPICard({ kpi, index }: { kpi: KPI; index: number }) {
     neutral: "text-muted-foreground bg-muted",
   };
   const trendColor = trendColors[kpi.trend];
+  const hasComparison =
+    typeof kpi.change === "number" && Number.isFinite(kpi.change) && kpi.change !== 0;
 
   const handleClick = () => {
     if (kpi.drillHref) {
@@ -82,19 +84,21 @@ function KPICard({ kpi, index }: { kpi: KPI; index: number }) {
           <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
             {kpi.label}
           </span>
-          <div
-            className={cn(
-              "flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium",
-              trendColor,
-            )}
-          >
-            {React.createElement(trendIcon, { className: "h-3 w-3" })}
-            {Math.abs(kpi.change)}%
-          </div>
+          {hasComparison && (
+            <div
+              className={cn(
+                "flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium tabular-nums",
+                trendColor,
+              )}
+            >
+              {React.createElement(trendIcon, { className: "h-3 w-3" })}
+              {Math.abs(kpi.change)}%
+            </div>
+          )}
         </div>
 
         <div className="flex items-baseline gap-1.5 mb-1">
-          <span className="text-2xl font-bold tracking-tight">{kpi.value}</span>
+          <span className="text-2xl font-bold tracking-tight tabular-nums">{kpi.value}</span>
           {kpi.drillHref && <ArrowUpRight className="h-3.5 w-3.5 text-muted-foreground" />}
         </div>
 

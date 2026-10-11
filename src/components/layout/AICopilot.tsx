@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -72,6 +72,13 @@ export function AICopilot() {
     },
   ]);
 
+  // Single AI entry point: the dashboard "AI Assistant" button opens this panel.
+  useEffect(() => {
+    const openHandler = () => setOpen(true);
+    window.addEventListener("erpx:open-ai-copilot", openHandler);
+    return () => window.removeEventListener("erpx:open-ai-copilot", openHandler);
+  }, []);
+
   const send = async (text?: string) => {
     const q = (text ?? input).trim();
     if (!q || busy) return;
@@ -97,17 +104,9 @@ export function AICopilot() {
 
   return (
     <>
-      <Button
-        onClick={() => setOpen((o) => !o)}
-        className="fixed bottom-5 right-5 z-40 h-14 w-14 rounded-full gradient-primary p-0 shadow-glow transition-transform hover:scale-105"
-        aria-label="Open AI Copilot"
-      >
-        <Sparkles className="h-6 w-6 text-white" />
-      </Button>
-
       {open && (
-        <div className="fixed bottom-24 right-5 z-40 flex h-[600px] max-h-[80vh] w-[380px] max-w-[calc(100vw-2.5rem)] flex-col overflow-hidden rounded-2xl border border-border shadow-elevate glass-strong animate-scale-in">
-          <div className="flex items-center gap-2.5 border-b border-border px-4 py-3">
+        <div className="fixed bottom-5 right-5 z-50 flex h-[600px] max-h-[80vh] w-[380px] max-w-[calc(100vw-2.5rem)] flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-elevate animate-scale-in">
+          <div className="flex items-center gap-2.5 border-b border-border bg-card px-4 py-3">
             <div className="grid h-8 w-8 place-items-center rounded-lg gradient-primary">
               <Sparkles className="h-4 w-4 text-white" />
             </div>

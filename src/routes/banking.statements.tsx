@@ -231,19 +231,19 @@ function Page() {
                     <TableCell className="whitespace-nowrap font-medium">
                       {formatDate(s.periodStart)} — {formatDate(s.periodEnd)}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right tabular-nums">
                       {formatMoney(s.openingBalance, selectedAccount?.currency)}
                     </TableCell>
-                    <TableCell className="text-right font-medium">
+                    <TableCell className="text-right font-medium tabular-nums">
                       {formatMoney(s.closingBalance, selectedAccount?.currency)}
                     </TableCell>
-                    <TableCell className="text-right text-success">
+                    <TableCell className="text-right text-success tabular-nums">
                       +{formatMoney(s.totalCredits, selectedAccount?.currency)}
                     </TableCell>
-                    <TableCell className="text-right text-destructive">
+                    <TableCell className="text-right text-destructive tabular-nums">
                       −{formatMoney(s.totalDebits, selectedAccount?.currency)}
                     </TableCell>
-                    <TableCell className="text-right">{s.transactionCount}</TableCell>
+                    <TableCell className="text-right tabular-nums">{s.transactionCount}</TableCell>
                     <TableCell className="capitalize">{s.source}</TableCell>
                   </TableRow>
                 ))}
