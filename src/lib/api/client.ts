@@ -64,6 +64,28 @@ export function getAccessToken(): string | null {
   return tokens.accessToken;
 }
 
+/**
+ * Global handler for the backend `MFA_STEP_UP_REQUIRED` response. A mounted
+ * component registers a prompt that shows the 6-digit dialog and resolves with
+ * the entered code (or `null` if the user cancels). The client then calls
+ * `POST /auth/mfa/step-up` and retries the original request once.
+ */
+export type MfaStepUpPrompt = () => Promise<string | null>;
+
+let mfaStepUpPrompt: MfaStepUpPrompt | null = null;
+
+export function registerMfaStepUpPrompt(prompt: MfaStepUpPrompt | null): void {
+  mfaStepUpPrompt = prompt;
+}
+
+function isMfaStepUpBody(body: unknown): boolean {
+  return (
+    !!body &&
+    typeof body === "object" &&
+    (body as { code?: unknown }).code === "MFA_STEP_UP_REQUIRED"
+  );
+}
+
 async function refreshAccessToken(): Promise<void> {
   if (!tokens.refreshToken) throw new Error("No refresh token");
   if (refreshPromise) return refreshPromise;
@@ -98,7 +120,11 @@ type RequestOptions = RequestInit & {
   keepMeta?: boolean;
 };
 
-async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
+async function request<T>(
+  path: string,
+  options: RequestOptions = {},
+  allowStepUp = true,
+): Promise<T> {
   const { params, ...fetchOptions } = options;
 
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
@@ -140,6 +166,31 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
 
   if (res.status === 204) {
     return undefined as T;
+  }
+
+  // Step-up MFA: a sensitive action was rejected because the session's MFA
+  // verification is stale. Prompt for a code, verify it, then retry once.
+  if (res.status === 403 && allowStepUp && mfaStepUpPrompt) {
+    const peek = await res
+      .clone()
+      .json()
+      .catch(() => null);
+    if (isMfaStepUpBody(peek)) {
+      const code = await mfaStepUpPrompt();
+      if (code) {
+        const stepRes = await fetchWithTimeout(`${API_BASE}/auth/mfa/step-up`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(tokens.accessToken ? { Authorization: `Bearer ${tokens.accessToken}` } : {}),
+          },
+          body: JSON.stringify({ code }),
+        });
+        if (stepRes.ok) {
+          return request<T>(path, options, false);
+        }
+      }
+    }
   }
 
   if (!res.ok) {

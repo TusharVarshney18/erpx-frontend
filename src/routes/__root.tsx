@@ -24,6 +24,7 @@ import { AuthProvider, useAuth } from "@/lib/auth";
 import { useAccess } from "@/hooks/useAccess";
 import { getRouteAccess } from "@/lib/navigation-access";
 import { UpgradeDialog } from "@/components/billing/upgrade-dialog";
+import { MfaStepUpDialog } from "@/components/auth/MfaStepUpDialog";
 import { Loader2, ShieldAlert, Lock } from "lucide-react";
 
 function NotFoundComponent() {
@@ -155,6 +156,7 @@ function RootComponent() {
             </SidebarProvider>
           </AuthGate>
           <Toaster richColors position="bottom-right" />
+          <MfaStepUpDialog />
         </TooltipProvider>
       </AuthProvider>
     </QueryClientProvider>
