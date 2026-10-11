@@ -53,6 +53,7 @@ import { Route as InventoryLowStockRouteImport } from './routes/inventory.low-st
 import { Route as InventoryProductsRouteImport } from './routes/inventory.products'
 import { Route as InventoryStockMovementsRouteImport } from './routes/inventory.stock-movements'
 import { Route as InventoryWarehousesRouteImport } from './routes/inventory.warehouses'
+import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as OperationsComplianceRouteImport } from './routes/operations.compliance'
 import { Route as OperationsWorkflowsRouteImport } from './routes/operations.workflows'
 import { Route as PurchasesBillsRouteImport } from './routes/purchases.bills'
@@ -306,6 +307,11 @@ const InventoryWarehousesRoute = InventoryWarehousesRouteImport.update({
   path: '/inventory/warehouses',
   getParentRoute: () => rootRouteImport,
 } as any)
+const InviteTokenRoute = InviteTokenRouteImport.update({
+  id: '/invite/$token',
+  path: '/invite/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OperationsComplianceRoute = OperationsComplianceRouteImport.update({
   id: '/operations/compliance',
   path: '/operations/compliance',
@@ -502,6 +508,7 @@ export interface FileRoutesByFullPath {
   '/inventory/products': typeof InventoryProductsRoute
   '/inventory/stock-movements': typeof InventoryStockMovementsRoute
   '/inventory/warehouses': typeof InventoryWarehousesRoute
+  '/invite/$token': typeof InviteTokenRoute
   '/operations/compliance': typeof OperationsComplianceRoute
   '/operations/workflows': typeof OperationsWorkflowsRoute
   '/purchases/bills': typeof PurchasesBillsRoute
@@ -578,6 +585,7 @@ export interface FileRoutesByTo {
   '/inventory/products': typeof InventoryProductsRoute
   '/inventory/stock-movements': typeof InventoryStockMovementsRoute
   '/inventory/warehouses': typeof InventoryWarehousesRoute
+  '/invite/$token': typeof InviteTokenRoute
   '/operations/compliance': typeof OperationsComplianceRoute
   '/operations/workflows': typeof OperationsWorkflowsRoute
   '/purchases/bills': typeof PurchasesBillsRoute
@@ -655,6 +663,7 @@ export interface FileRoutesById {
   '/inventory/products': typeof InventoryProductsRoute
   '/inventory/stock-movements': typeof InventoryStockMovementsRoute
   '/inventory/warehouses': typeof InventoryWarehousesRoute
+  '/invite/$token': typeof InviteTokenRoute
   '/operations/compliance': typeof OperationsComplianceRoute
   '/operations/workflows': typeof OperationsWorkflowsRoute
   '/purchases/bills': typeof PurchasesBillsRoute
@@ -733,6 +742,7 @@ export interface FileRouteTypes {
     | '/inventory/products'
     | '/inventory/stock-movements'
     | '/inventory/warehouses'
+    | '/invite/$token'
     | '/operations/compliance'
     | '/operations/workflows'
     | '/purchases/bills'
@@ -809,6 +819,7 @@ export interface FileRouteTypes {
     | '/inventory/products'
     | '/inventory/stock-movements'
     | '/inventory/warehouses'
+    | '/invite/$token'
     | '/operations/compliance'
     | '/operations/workflows'
     | '/purchases/bills'
@@ -885,6 +896,7 @@ export interface FileRouteTypes {
     | '/inventory/products'
     | '/inventory/stock-movements'
     | '/inventory/warehouses'
+    | '/invite/$token'
     | '/operations/compliance'
     | '/operations/workflows'
     | '/purchases/bills'
@@ -962,6 +974,7 @@ export interface RootRouteChildren {
   InventoryProductsRoute: typeof InventoryProductsRoute
   InventoryStockMovementsRoute: typeof InventoryStockMovementsRoute
   InventoryWarehousesRoute: typeof InventoryWarehousesRoute
+  InviteTokenRoute: typeof InviteTokenRoute
   OperationsComplianceRoute: typeof OperationsComplianceRoute
   OperationsWorkflowsRoute: typeof OperationsWorkflowsRoute
   PurchasesBillsRoute: typeof PurchasesBillsRoute
@@ -1304,6 +1317,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InventoryWarehousesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/invite/$token': {
+      id: '/invite/$token'
+      path: '/invite/$token'
+      fullPath: '/invite/$token'
+      preLoaderRoute: typeof InviteTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/operations/compliance': {
       id: '/operations/compliance'
       path: '/operations/compliance'
@@ -1562,6 +1582,7 @@ const rootRouteChildren: RootRouteChildren = {
   InventoryProductsRoute: InventoryProductsRoute,
   InventoryStockMovementsRoute: InventoryStockMovementsRoute,
   InventoryWarehousesRoute: InventoryWarehousesRoute,
+  InviteTokenRoute: InviteTokenRoute,
   OperationsComplianceRoute: OperationsComplianceRoute,
   OperationsWorkflowsRoute: OperationsWorkflowsRoute,
   PurchasesBillsRoute: PurchasesBillsRoute,
