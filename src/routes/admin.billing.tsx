@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Progress } from "@/components/ui/progress";
 import {
   Table,
   TableBody,
@@ -43,7 +44,9 @@ import {
   Zap,
   CalendarDays,
   ArrowUpDown,
+  ArrowUpRight,
   Ban,
+  Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -93,6 +96,20 @@ type Invoice = {
   createdAt: string;
 };
 
+type AiUsage = {
+  planSlug: string | null;
+  aiCopilot: boolean;
+  aiEnabled: boolean;
+  aiMonthlyQuota: number | null;
+  aiOverrideActive: boolean;
+  aiAddonBalance: number;
+  used: number;
+  remaining: number | null;
+  withinQuota: boolean;
+  periodStart: string;
+  periodEnd: string;
+};
+
 function BillingPage() {
   const qc = useQueryClient();
   const { activeOrganizationId, isSuperAdmin } = useAuth();
@@ -126,6 +143,13 @@ function BillingPage() {
     enabled: !!activeOrganizationId,
   });
 
+  const { data: aiUsage } = useQuery({
+    queryKey: ["admin-ai-usage", activeOrganizationId],
+    queryFn: () =>
+      api.get<AiUsage>(`/subscriptions/organizations/${activeOrganizationId}/ai-usage`),
+    enabled: !!activeOrganizationId,
+  });
+
   const changePlan = useMutation({
     mutationFn: async () => {
       return api.patch(`/subscriptions/organizations/${activeOrganizationId}/subscription/plan`, {
@@ -138,7 +162,7 @@ function BillingPage() {
       setShowChangePlan(false);
       setSelectedPlanId("");
     },
-    onError: (e: any) => toast.error(e.message ?? "Plan change failed"),
+    onError: (e: Error) => toast.error(e.message ?? "Plan change failed"),
   });
 
   const cancelSubscription = useMutation({
@@ -152,7 +176,7 @@ function BillingPage() {
       qc.invalidateQueries({ queryKey: ["admin-subscription"] });
       toast.success("Subscription canceled");
     },
-    onError: (e: any) => toast.error(e.message ?? "Cancel failed"),
+    onError: (e: Error) => toast.error(e.message ?? "Cancel failed"),
   });
 
   const formatCurrency = (amount: number, currency: string) => {
@@ -250,6 +274,75 @@ function BillingPage() {
                 </CardContent>
               </Card>
             </div>
+          )}
+
+          {aiUsage && (
+            <Card>
+              <CardContent className="space-y-3 p-5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Sparkles className="h-4 w-4" /> AI Questions
+                  </div>
+                  {aiUsage.aiCopilot && aiUsage.aiMonthlyQuota !== null && (
+                    <span className="text-sm font-medium">
+                      {aiUsage.used} / {aiUsage.aiMonthlyQuota}
+                      {aiUsage.aiAddonBalance > 0 && (
+                        <span className="ml-1 text-xs text-muted-foreground">
+                          (incl. {aiUsage.aiAddonBalance} add-on)
+                        </span>
+                      )}
+                    </span>
+                  )}
+                </div>
+
+                {!aiUsage.aiCopilot ? (
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <p className="text-sm text-muted-foreground">
+                      AI Copilot isn&apos;t included in your current plan. Upgrade to ask questions
+                      about your live ERP data.
+                    </p>
+                    <Button
+                      size="sm"
+                      className="gradient-primary text-white"
+                      onClick={() => setShowUpgrade(true)}
+                    >
+                      <ArrowUpRight className="mr-1.5 h-3.5 w-3.5" /> Upgrade
+                    </Button>
+                  </div>
+                ) : !aiUsage.aiEnabled ? (
+                  <p className="text-sm text-muted-foreground">
+                    AI is turned off for your organization. An admin can enable it in Company
+                    Settings.
+                  </p>
+                ) : aiUsage.aiMonthlyQuota === null ? (
+                  <p className="text-sm text-muted-foreground">
+                    Unlimited AI questions on your current plan.
+                  </p>
+                ) : (
+                  <>
+                    <Progress
+                      value={
+                        aiUsage.aiMonthlyQuota > 0
+                          ? Math.min(100, Math.round((aiUsage.used / aiUsage.aiMonthlyQuota) * 100))
+                          : 0
+                      }
+                      className={!aiUsage.withinQuota ? "[&>*]:bg-destructive" : undefined}
+                    />
+                    <p
+                      className={
+                        aiUsage.withinQuota
+                          ? "text-sm text-muted-foreground"
+                          : "text-sm font-medium text-destructive"
+                      }
+                    >
+                      {aiUsage.withinQuota
+                        ? `${aiUsage.remaining ?? 0} AI question(s) remaining this period.`
+                        : "You've reached your AI question limit for this period. It resets at the start of your next billing period."}
+                    </p>
+                  </>
+                )}
+              </CardContent>
+            </Card>
           )}
 
           <div className="flex gap-3">

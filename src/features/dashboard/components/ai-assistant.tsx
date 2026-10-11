@@ -2,7 +2,17 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, Send, X, Maximize2, Minimize2, Bot, ArrowUp, Loader2, Crown } from "lucide-react";
+import {
+  Sparkles,
+  Send,
+  X,
+  Maximize2,
+  Minimize2,
+  Bot,
+  ArrowUp,
+  Loader2,
+  Crown,
+} from "lucide-react";
 import { cn } from "@/design-system";
 import { aiChat } from "@/lib/api/ai";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
@@ -62,15 +72,21 @@ export function AIAssistant() {
         content: res?.message?.content || "I'm sorry, I couldn't generate a response.",
       };
       setMessages((prev) => [...prev, reply]);
-    } catch (e: any) {
-      const msg = e?.message ?? "";
-      const status = e?.status ?? e?.statusCode;
+    } catch (e) {
+      const err = (e ?? {}) as { message?: string; status?: number; statusCode?: number };
+      const msg = err.message ?? "";
+      const status = err.status ?? err.statusCode;
       const isProviderMissing =
-        status === 503 ||
-        /provider|not configured|no provider|unavailable|503/i.test(msg);
-      const fallback = isProviderMissing
-        ? "AI provider is not configured. Set up an LLM provider (e.g. Ollama or OpenAI) in the backend configuration to enable AI."
-        : "Something went wrong while contacting the AI service. Please try again.";
+        status === 503 || /provider|not configured|no provider|unavailable|503/i.test(msg);
+      const fallback = /not included in your current plan|upgrade to a plan with ai/i.test(msg)
+        ? "AI Copilot isn't included in your current plan. Upgrade to a plan with AI to ask questions about your live ERP data."
+        : /ai is disabled|disabled for this organization/i.test(msg)
+          ? "AI is turned off for your organization. An admin can enable it in Company Settings."
+          : /monthly ai usage limit|usage limit reached|monthly.*limit/i.test(msg)
+            ? "Your organization has reached its monthly AI usage limit. It resets at the start of your next billing period."
+            : isProviderMissing
+              ? "AI provider is not configured. Set up an LLM provider (e.g. Ollama or OpenAI) in the backend configuration to enable AI."
+              : "Something went wrong while contacting the AI service. Please try again.";
       const reply: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
@@ -167,74 +183,78 @@ export function AIAssistant() {
                 </p>
               </div>
             ) : (
-            <>
-            {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-3">
-              {messages.map((msg) => (
-                <motion.div
-                  key={msg.id}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className={cn(
-                    "flex gap-2",
-                    msg.role === "user" ? "justify-end" : "justify-start",
-                  )}
-                >
-                  <div
-                    className={cn(
-                      "max-w-[85%] rounded-xl px-3.5 py-2.5 text-sm leading-relaxed",
-                      msg.role === "user"
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted text-foreground",
-                    )}
-                  >
-                    {msg.content}
+              <>
+                {/* Messages */}
+                <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                  {messages.map((msg) => (
+                    <motion.div
+                      key={msg.id}
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className={cn(
+                        "flex gap-2",
+                        msg.role === "user" ? "justify-end" : "justify-start",
+                      )}
+                    >
+                      <div
+                        className={cn(
+                          "max-w-[85%] rounded-xl px-3.5 py-2.5 text-sm leading-relaxed",
+                          msg.role === "user"
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-muted text-foreground",
+                        )}
+                      >
+                        {msg.content}
+                      </div>
+                    </motion.div>
+                  ))}
+                  <div ref={messagesEndRef} />
+                </div>
+
+                {/* Suggestions */}
+                <div className="px-4 py-2 border-t border-border/50">
+                  <div className="flex flex-wrap gap-1.5">
+                    {suggestions.map((s) => (
+                      <button
+                        key={s}
+                        onClick={() => handleSend(s)}
+                        className="rounded-full bg-muted px-2.5 py-1 text-[11px] text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+                      >
+                        {s}
+                      </button>
+                    ))}
                   </div>
-                </motion.div>
-              ))}
-              <div ref={messagesEndRef} />
-            </div>
+                </div>
 
-            {/* Suggestions */}
-            <div className="px-4 py-2 border-t border-border/50">
-              <div className="flex flex-wrap gap-1.5">
-                {suggestions.map((s) => (
+                {/* Input */}
+                <div className="flex items-center gap-2 border-t border-border p-3">
+                  <input
+                    type="text"
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSend();
+                      }
+                    }}
+                    placeholder="Ask anything..."
+                    className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+                  />
                   <button
-                    key={s}
-                    onClick={() => handleSend(s)}
-                    className="rounded-full bg-muted px-2.5 py-1 text-[11px] text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+                    onClick={() => handleSend()}
+                    disabled={!input.trim() || busy}
+                    className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground disabled:opacity-30 transition-opacity"
+                    aria-label="Send message"
                   >
-                    {s}
+                    {busy ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <ArrowUp className="h-3.5 w-3.5" />
+                    )}
                   </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Input */}
-            <div className="flex items-center gap-2 border-t border-border p-3">
-              <input
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSend();
-                  }
-                }}
-                placeholder="Ask anything..."
-                className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-              />
-              <button
-                onClick={() => handleSend()}
-                disabled={!input.trim() || busy}
-                className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground disabled:opacity-30 transition-opacity"
-                aria-label="Send message"
-              >
-                {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ArrowUp className="h-3.5 w-3.5" />}
-              </button>
-            </div>
-            </>
+                </div>
+              </>
             )}
           </>
         )}

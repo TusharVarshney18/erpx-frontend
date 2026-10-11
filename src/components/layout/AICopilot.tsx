@@ -26,11 +26,18 @@ function friendlyAIMessage(e: unknown): string {
   const msg = String(obj.message ?? "");
   const status = obj.status ?? obj.statusCode;
 
+  if (
+    /not included in your current plan|upgrade to a plan with ai|not available on your current plan/i.test(
+      msg,
+    )
+  ) {
+    return "AI Copilot isn't included in your current plan. Upgrade to a plan with AI to ask questions about your live ERP data.";
+  }
   if (/ai is disabled|disabled for this organization/i.test(msg)) {
     return "AI is turned off for your organization. An admin can enable it in Company Settings.";
   }
   if (/monthly ai usage limit|usage limit reached|monthly.*limit/i.test(msg)) {
-    return "Your organization has reached its monthly AI usage limit. It resets next month, or an admin can raise the cap in Company Settings.";
+    return "Your organization has reached its monthly AI usage limit. It resets at the start of your next billing period, or an admin can raise the cap.";
   }
   if (/too many ai requests|rate limit|wait a moment/i.test(msg) || status === 429) {
     return "You're sending requests too quickly. Please wait a moment and try again.";
