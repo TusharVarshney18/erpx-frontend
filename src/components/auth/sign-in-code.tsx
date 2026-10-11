@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { useAuth } from "@/lib/auth";
+import { useAuth, type OrganizationOption } from "@/lib/auth";
 import { useCountdown } from "@/hooks/useCountdown";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -17,10 +17,14 @@ function errorMessage(err: unknown, fallback: string): string {
 export function SignInCodePanel({
   email,
   onMfaRequired,
+  onMfaSetupRequired,
+  onOrgSelectionRequired,
   onBack,
 }: {
   email: string;
   onMfaRequired: (challenge: string) => void;
+  onMfaSetupRequired: () => void;
+  onOrgSelectionRequired: (selectionToken: string, organizations: OrganizationOption[]) => void;
   onBack: () => void;
 }) {
   const nav = useNavigate();
@@ -72,8 +76,16 @@ export function SignInCodePanel({
     setVerifying(true);
     try {
       const result = await verifyLoginCode(email, value);
-      if (result.mfaRequired) {
+      if (result.step === "org-selection") {
+        onOrgSelectionRequired(result.selectionToken, result.organizations);
+        return;
+      }
+      if (result.step === "mfa") {
         onMfaRequired(result.mfaChallenge);
+        return;
+      }
+      if (result.step === "mfa-setup") {
+        onMfaSetupRequired();
         return;
       }
       toast.success("Welcome back!");

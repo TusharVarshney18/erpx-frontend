@@ -66,9 +66,36 @@ type LoginResponse = {
   organization: OrganizationInfo;
 };
 
+type AuthStepResponse = {
+  accessToken?: string;
+  refreshToken?: string;
+  mfaRequired?: boolean;
+  mfaChallenge?: string;
+  mfaSetupRequired?: boolean;
+  mfaSetupToken?: string;
+  orgSelectionRequired?: boolean;
+  selectionToken?: string;
+  organizations?: OrganizationOption[];
+  user?: { email?: string };
+};
+
+export type OrganizationOption = {
+  id: string;
+  name: string;
+  code: string;
+  slug: string;
+};
+
 export type LoginResult =
-  | { mfaRequired: true; mfaChallenge: string; user: { email: string } }
-  | { mfaRequired: false; accessToken: string; refreshToken: string };
+  | { step: "mfa"; mfaChallenge: string; user: { email: string } }
+  | { step: "mfa-setup"; mfaSetupToken: string; user: { email: string } }
+  | {
+      step: "org-selection";
+      selectionToken: string;
+      organizations: OrganizationOption[];
+      user: { email: string };
+    }
+  | { step: "done"; accessToken: string; refreshToken: string };
 
 export type LoginCodeDelivery = {
   maskedEmail: string | null;
@@ -142,6 +169,7 @@ type AuthCtx = {
   requestPhoneLoginCode: (phone: string) => Promise<PhoneLoginCodeDelivery>;
   verifyPhoneLoginCode: (phone: string, code: string) => Promise<LoginResult>;
   completeOAuthLogin: (grant: string) => Promise<LoginResult>;
+  selectOrganization: (selectionToken: string, orgId: string) => Promise<LoginResult>;
   mfaStatus: () => Promise<MfaStatus>;
   startMfaEnroll: () => Promise<MfaEnrollResult>;
   confirmMfaEnroll: (secret: string, code: string) => Promise<MfaEnrollConfirmResult>;
@@ -176,13 +204,14 @@ const Ctx = createContext<AuthCtx>({
   isSuperAdmin: false,
   organizations: [],
   activeOrganizationId: null,
-  signIn: async () => ({ mfaRequired: false, accessToken: "", refreshToken: "" }),
+  signIn: async () => ({ step: "done", accessToken: "", refreshToken: "" }),
   completeMfaLogin: async () => {},
   requestLoginCode: async () => ({ maskedEmail: null, deliveredVia: "console" }),
-  verifyLoginCode: async () => ({ mfaRequired: false, accessToken: "", refreshToken: "" }),
+  verifyLoginCode: async () => ({ step: "done", accessToken: "", refreshToken: "" }),
   requestPhoneLoginCode: async () => ({ maskedPhone: null, deliveredVia: "console" }),
-  verifyPhoneLoginCode: async () => ({ mfaRequired: false, accessToken: "", refreshToken: "" }),
-  completeOAuthLogin: async () => ({ mfaRequired: false, accessToken: "", refreshToken: "" }),
+  verifyPhoneLoginCode: async () => ({ step: "done", accessToken: "", refreshToken: "" }),
+  completeOAuthLogin: async () => ({ step: "done", accessToken: "", refreshToken: "" }),
+  selectOrganization: async () => ({ step: "done", accessToken: "", refreshToken: "" }),
   mfaStatus: async () => ({ enabled: false, enabledAt: null }),
   startMfaEnroll: async () => ({ secret: "", otpauthUrl: "" }),
   confirmMfaEnroll: async () => ({ backupCodes: [] }),
@@ -267,19 +296,54 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [fetchMe, fetchOrganizations],
   );
 
-  const signIn = useCallback(
-    async (email: string, password: string): Promise<LoginResult> => {
-      const data = await api.post<LoginResponse & { mfaRequired?: boolean; mfaChallenge?: string }>(
-        "/auth/login",
-        { email, password },
-      );
-      if (data.mfaRequired) {
-        return { mfaRequired: true, mfaChallenge: data.mfaChallenge ?? "", user: { email } };
+  // A login/OTP/Google/select-org call returns one of four steps: an MFA
+  // challenge, a mandatory MFA setup, an org-selection picker, or the final
+  // token pair. Resolve them all the same way so every sign-in method shares
+  // identical handling.
+  const resolveAuthStep = useCallback(
+    async (data: AuthStepResponse, fallbackEmail: string): Promise<LoginResult> => {
+      if (data.orgSelectionRequired) {
+        return {
+          step: "org-selection",
+          selectionToken: data.selectionToken ?? "",
+          organizations: data.organizations ?? [],
+          user: { email: data.user?.email ?? fallbackEmail },
+        };
       }
-      await finalizeAuthenticated(data);
-      return { mfaRequired: false, accessToken: data.accessToken, refreshToken: data.refreshToken };
+      if (data.mfaRequired) {
+        return {
+          step: "mfa",
+          mfaChallenge: data.mfaChallenge ?? "",
+          user: { email: data.user?.email ?? fallbackEmail },
+        };
+      }
+      if (data.mfaSetupRequired) {
+        setTokens(data.mfaSetupToken ?? "", "");
+        return {
+          step: "mfa-setup",
+          mfaSetupToken: data.mfaSetupToken ?? "",
+          user: { email: data.user?.email ?? fallbackEmail },
+        };
+      }
+      await finalizeAuthenticated({
+        accessToken: data.accessToken ?? "",
+        refreshToken: data.refreshToken ?? "",
+      });
+      return {
+        step: "done",
+        accessToken: data.accessToken ?? "",
+        refreshToken: data.refreshToken ?? "",
+      };
     },
     [finalizeAuthenticated],
+  );
+
+  const signIn = useCallback(
+    async (email: string, password: string): Promise<LoginResult> => {
+      const data = await api.post<AuthStepResponse>("/auth/login", { email, password });
+      return resolveAuthStep(data, email);
+    },
+    [resolveAuthStep],
   );
 
   const completeMfaLogin = useCallback(
@@ -296,17 +360,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const verifyLoginCode = useCallback(
     async (email: string, code: string): Promise<LoginResult> => {
-      const data = await api.post<LoginResponse & { mfaRequired?: boolean; mfaChallenge?: string }>(
-        "/auth/login-otp/verify",
-        { email, code },
-      );
-      if (data.mfaRequired) {
-        return { mfaRequired: true, mfaChallenge: data.mfaChallenge ?? "", user: { email } };
-      }
-      await finalizeAuthenticated(data);
-      return { mfaRequired: false, accessToken: data.accessToken, refreshToken: data.refreshToken };
+      const data = await api.post<AuthStepResponse>("/auth/login-otp/verify", { email, code });
+      return resolveAuthStep(data, email);
     },
-    [finalizeAuthenticated],
+    [resolveAuthStep],
   );
 
   const requestPhoneLoginCode = useCallback(async (phone: string) => {
@@ -315,36 +372,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const verifyPhoneLoginCode = useCallback(
     async (phone: string, code: string): Promise<LoginResult> => {
-      const data = await api.post<LoginResponse & { mfaRequired?: boolean; mfaChallenge?: string }>(
-        "/auth/login-otp/verify-phone",
-        { phone, code },
-      );
-      if (data.mfaRequired) {
-        return { mfaRequired: true, mfaChallenge: data.mfaChallenge ?? "", user: { email: "" } };
-      }
-      await finalizeAuthenticated(data);
-      return { mfaRequired: false, accessToken: data.accessToken, refreshToken: data.refreshToken };
+      const data = await api.post<AuthStepResponse>("/auth/login-otp/verify-phone", {
+        phone,
+        code,
+      });
+      return resolveAuthStep(data, "");
     },
-    [finalizeAuthenticated],
+    [resolveAuthStep],
   );
 
   const completeOAuthLogin = useCallback(
     async (grant: string): Promise<LoginResult> => {
-      const data = await api.post<LoginResponse & { mfaRequired?: boolean; mfaChallenge?: string }>(
-        "/auth/oauth/exchange",
-        { grant },
-      );
-      if (data.mfaRequired) {
-        return {
-          mfaRequired: true,
-          mfaChallenge: data.mfaChallenge ?? "",
-          user: { email: data.user?.email ?? "" },
-        };
-      }
-      await finalizeAuthenticated(data);
-      return { mfaRequired: false, accessToken: data.accessToken, refreshToken: data.refreshToken };
+      const data = await api.post<AuthStepResponse>("/auth/oauth/exchange", { grant });
+      return resolveAuthStep(data, data.user?.email ?? "");
     },
-    [finalizeAuthenticated],
+    [resolveAuthStep],
+  );
+
+  const selectOrganization = useCallback(
+    async (selectionToken: string, orgId: string): Promise<LoginResult> => {
+      const data = await api.post<AuthStepResponse>("/auth/select-org", {
+        selectionToken,
+        orgId,
+      });
+      return resolveAuthStep(data, data.user?.email ?? "");
+    },
+    [resolveAuthStep],
   );
 
   const mfaStatus = useCallback(async () => {
@@ -355,9 +408,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return api.post<MfaEnrollResult>("/auth/mfa/enroll", {});
   }, []);
 
-  const confirmMfaEnroll = useCallback(async (secret: string, code: string) => {
-    return api.post<MfaEnrollConfirmResult>("/auth/mfa/verify", { secret, code });
-  }, []);
+  const confirmMfaEnroll = useCallback(
+    async (secret: string, code: string) => {
+      const data = await api.post<{
+        backupCodes: string[];
+        accessToken?: string;
+        refreshToken?: string;
+        expiresAt?: string;
+      }>("/auth/mfa/verify", { secret, code });
+      if (data.accessToken) {
+        await finalizeAuthenticated({
+          accessToken: data.accessToken,
+          refreshToken: data.refreshToken ?? "",
+        });
+      }
+      return { backupCodes: data.backupCodes };
+    },
+    [finalizeAuthenticated],
+  );
 
   const regenerateMfaBackupCodes = useCallback(async (code: string) => {
     return api.post<MfaEnrollConfirmResult>("/auth/mfa/regenerate-backup-codes", { code });
@@ -469,6 +537,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     requestPhoneLoginCode,
     verifyPhoneLoginCode,
     completeOAuthLogin,
+    selectOrganization,
     mfaStatus,
     startMfaEnroll,
     confirmMfaEnroll,

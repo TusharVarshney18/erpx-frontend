@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router"
 import { useEffect, useRef, useState } from "react";
 import { z } from "zod";
 import { motion, type Variants } from "framer-motion";
-import { useAuth } from "@/lib/auth";
+import { useAuth, type OrganizationOption } from "@/lib/auth";
 import { api, API_BASE } from "@/lib/api/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,7 +16,7 @@ import {
   Building2,
   Eye,
   EyeOff,
-  Fingerprint,
+  History,
   KeyRound,
   Loader2,
   Lock,
@@ -27,7 +27,6 @@ import {
   ShieldCheck,
   ShoppingCart,
   Sparkles,
-  Star,
   UserPlus,
   Users,
   Wallet,
@@ -45,7 +44,7 @@ export const Route = createFileRoute("/auth")({
     oauth_grant: z.string().optional(),
     oauth_error: z.string().optional(),
   }),
-  head: () => ({ meta: [{ title: "Sign in — Tushar Erp" }] }),
+  head: () => ({ meta: [{ title: "Sign in — ERPX" }] }),
   component: AuthPage,
 });
 
@@ -76,6 +75,12 @@ const METRICS: { value: string; label: string }[] = [
   { value: "99.9%", label: "Uptime SLA" },
   { value: "10+", label: "Modules included" },
   { value: "24/7", label: "Expert support" },
+];
+
+const TRUST_POINTS: { icon: LucideIcon; title: string }[] = [
+  { icon: History, title: "Audit trail on every entry" },
+  { icon: ShieldCheck, title: "Role-based access control" },
+  { icon: Lock, title: "Per-company data isolation" },
 ];
 
 function AuthShell({ children }: { children: React.ReactNode }) {
@@ -109,7 +114,7 @@ function LogoLockup() {
         <Building2 className="h-5 w-5" />
       </div>
       <div className="text-left leading-tight">
-        <p className="text-base font-semibold tracking-tight text-foreground">Tushar Erp</p>
+        <p className="text-base font-semibold tracking-tight text-foreground">ERPX</p>
         <p className="text-[11px] text-muted-foreground">Enterprise suite</p>
       </div>
     </div>
@@ -147,7 +152,7 @@ function BrandPanel() {
             <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-emerald-400 ring-4 ring-sidebar" />
           </div>
           <div className="leading-tight">
-            <p className="text-lg font-semibold tracking-tight text-white">Tushar Erp</p>
+            <p className="text-lg font-semibold tracking-tight text-white">ERPX</p>
             <p className="text-xs text-white/50">Enterprise suite</p>
           </div>
         </motion.div>
@@ -197,22 +202,18 @@ function BrandPanel() {
         animate="visible"
         className="relative space-y-6"
       >
-        <motion.div
-          variants={fadeUp}
-          className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 backdrop-blur"
-        >
-          <div className="flex items-center gap-0.5 text-amber-400">
-            {[0, 1, 2, 3, 4].map((i) => (
-              <Star key={i} className="h-3.5 w-3.5 fill-current" />
-            ))}
-          </div>
-          <p className="mt-3 text-sm italic leading-relaxed text-white/80">
-            &ldquo;We replaced three disconnected tools with Tushar Erp — month-end close used to
-            take a week, now it takes a day.&rdquo;
-          </p>
-          <p className="mt-3 text-xs font-medium text-white/50">
-            Finance Director, mid-market manufacturing
-          </p>
+        <motion.div variants={fadeUp} className="space-y-3">
+          {TRUST_POINTS.map((t) => (
+            <div
+              key={t.title}
+              className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 backdrop-blur"
+            >
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-white/10 bg-white/5 text-sky-300">
+                <t.icon className="h-4 w-4" />
+              </span>
+              <span className="text-[13px] font-medium text-white/90">{t.title}</span>
+            </div>
+          ))}
         </motion.div>
 
         <motion.dl
@@ -239,9 +240,6 @@ function BrandPanel() {
             <ShieldCheck className="h-3.5 w-3.5" /> Bank-grade encryption
           </span>
           <span className="inline-flex items-center gap-1.5">
-            <Fingerprint className="h-3.5 w-3.5" /> SSO &amp; MFA ready
-          </span>
-          <span className="inline-flex items-center gap-1.5">
             <Lock className="h-3.5 w-3.5" /> GDPR compliant
           </span>
         </motion.p>
@@ -253,7 +251,17 @@ function BrandPanel() {
 function AuthPage() {
   const nav = useNavigate();
   const { email: initialEmail, oauth_grant, oauth_error } = useSearch({ from: "/auth" });
-  const { user, loading, signIn, signUp, completeMfaLogin, completeOAuthLogin } = useAuth();
+  const {
+    user,
+    loading,
+    signIn,
+    signUp,
+    completeMfaLogin,
+    completeOAuthLogin,
+    selectOrganization,
+    startMfaEnroll,
+    confirmMfaEnroll,
+  } = useAuth();
   const [tab, setTab] = useState("signin");
   const [email, setEmail] = useState(initialEmail ?? "");
   const [password, setPassword] = useState("");
@@ -278,11 +286,20 @@ function AuthPage() {
   const [mfaChallenge, setMfaChallenge] = useState<string | null>(null);
   const [mfaCode, setMfaCode] = useState("");
 
+  // Mandatory MFA setup (owner/admin without MFA)
+  const [mfaSetup, setMfaSetup] = useState(false);
+
+  // Organization picker shown when one login maps to several organizations.
+  const [orgSelection, setOrgSelection] = useState<{
+    selectionToken: string;
+    organizations: OrganizationOption[];
+  } | null>(null);
+
   useEffect(() => {
-    if (!loading && user) {
+    if (!loading && user && !mfaSetup) {
       nav({ to: "/" });
     }
-  }, [loading, user, nav]);
+  }, [loading, user, nav, mfaSetup]);
 
   useEffect(() => {
     if (email || typeof localStorage === "undefined") return;
@@ -323,9 +340,16 @@ function AuthPage() {
       setOauthBusy(true);
       completeOAuthLogin(oauth_grant)
         .then((result) => {
-          if (result.mfaRequired) {
+          if (result.step === "org-selection") {
+            setOrgSelection({
+              selectionToken: result.selectionToken,
+              organizations: result.organizations,
+            });
+          } else if (result.step === "mfa") {
             setMfaChallenge(result.mfaChallenge);
             setMfaCode("");
+          } else if (result.step === "mfa-setup") {
+            setMfaSetup(true);
           } else {
             toast.success("Signed in with Google");
             nav({ to: "/" });
@@ -339,6 +363,11 @@ function AuthPage() {
     } else if (oauth_error === "no_account") {
       setOauthNotice(
         "No workspace was found for this Google account. Ask your admin to invite you, or create an account instead.",
+      );
+      clearParams();
+    } else if (oauth_error === "blocked") {
+      setOauthNotice(
+        "Sign-in with Google is not allowed for your organization. Use another method or contact your admin.",
       );
       clearParams();
     }
@@ -361,15 +390,50 @@ function AuthPage() {
       } else {
         localStorage.removeItem("erpx_remembered_email");
       }
-      if (result.mfaRequired) {
+      if (result.step === "org-selection") {
+        setOrgSelection({
+          selectionToken: result.selectionToken,
+          organizations: result.organizations,
+        });
+        return;
+      }
+      if (result.step === "mfa") {
         setMfaChallenge(result.mfaChallenge);
         setMfaCode("");
+        return;
+      }
+      if (result.step === "mfa-setup") {
+        setMfaSetup(true);
         return;
       }
       toast.success("Welcome back!");
       nav({ to: "/" });
     } catch (err) {
       toast.error(errorMessage(err, "Invalid email or password"));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleSelectOrg = async (orgId: string) => {
+    if (!orgSelection) return;
+    setBusy(true);
+    try {
+      const result = await selectOrganization(orgSelection.selectionToken, orgId);
+      setOrgSelection(null);
+      if (result.step === "mfa") {
+        setMfaChallenge(result.mfaChallenge);
+        setMfaCode("");
+        return;
+      }
+      if (result.step === "mfa-setup") {
+        setMfaSetup(true);
+        return;
+      }
+      toast.success("Welcome back!");
+      nav({ to: "/" });
+    } catch (err) {
+      toast.error(errorMessage(err, "Could not select organization. Please try again."));
     } finally {
       setBusy(false);
     }
@@ -427,7 +491,23 @@ function AuthPage() {
 
   return (
     <AuthShell>
-      {mfaChallenge ? (
+      {orgSelection ? (
+        <OrgPickerCard
+          organizations={orgSelection.organizations}
+          busy={busy}
+          onSelect={handleSelectOrg}
+          onBack={() => setOrgSelection(null)}
+        />
+      ) : mfaSetup ? (
+        <MfaSetupCard
+          startMfaEnroll={startMfaEnroll}
+          confirmMfaEnroll={confirmMfaEnroll}
+          onDone={() => {
+            setMfaSetup(false);
+            nav({ to: "/" });
+          }}
+        />
+      ) : mfaChallenge ? (
         <MfaCard
           busy={busy}
           mfaCode={mfaCode}
@@ -640,7 +720,7 @@ function AuthPage() {
                         type={showPassword ? "text" : "password"}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        placeholder="At least 8 characters"
+                        placeholder="Enter your password"
                         autoComplete={isSignUp ? "new-password" : "current-password"}
                         className="h-11 rounded-lg pl-10 pr-10"
                         required
@@ -670,6 +750,10 @@ function AuthPage() {
                       setMfaChallenge(challenge);
                       setMfaCode("");
                     }}
+                    onMfaSetupRequired={() => setMfaSetup(true)}
+                    onOrgSelectionRequired={(selectionToken, organizations) =>
+                      setOrgSelection({ selectionToken, organizations })
+                    }
                     onBack={() => setPhoneMode(false)}
                   />
                 ) : codeMode ? (
@@ -679,6 +763,10 @@ function AuthPage() {
                       setMfaChallenge(challenge);
                       setMfaCode("");
                     }}
+                    onMfaSetupRequired={() => setMfaSetup(true)}
+                    onOrgSelectionRequired={(selectionToken, organizations) =>
+                      setOrgSelection({ selectionToken, organizations })
+                    }
                     onBack={() => setCodeMode(false)}
                   />
                 ) : (
@@ -737,21 +825,97 @@ function AuthPage() {
                             </button>
                           </p>
                         )}
+                        <p className="pt-1 text-[11px] leading-relaxed text-muted-foreground">
+                          By continuing, you agree to our{" "}
+                          <a
+                            href="/terms"
+                            className="font-medium text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+                          >
+                            Terms
+                          </a>{" "}
+                          and{" "}
+                          <a
+                            href="/privacy"
+                            className="font-medium text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+                          >
+                            Privacy Policy
+                          </a>
+                          .
+                        </p>
                       </div>
                     )}
                   </div>
                 )}
               </form>
             </Tabs>
-
-            <div className="mt-6 flex items-center justify-center gap-1.5 border-t border-border/60 pt-5 text-xs text-muted-foreground">
-              <ShieldCheck className="h-3.5 w-3.5 text-success" />
-              Protected with TLS encryption, SSO &amp; MFA
-            </div>
           </div>
         </motion.div>
       )}
     </AuthShell>
+  );
+}
+
+function OrgPickerCard({
+  organizations,
+  busy,
+  onSelect,
+  onBack,
+}: {
+  organizations: OrganizationOption[];
+  busy: boolean;
+  onSelect: (orgId: string) => void;
+  onBack: () => void;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 18, scale: 0.99 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+    >
+      <div className="rounded-2xl border border-border/60 bg-card/80 p-6 shadow-glass backdrop-blur-xl sm:p-8">
+        <div className="flex flex-col items-center text-center">
+          <div className="relative grid h-14 w-14 place-items-center rounded-2xl gradient-primary text-white shadow-glow">
+            <Building2 className="h-7 w-7" />
+          </div>
+          <h2 className="mt-5 text-2xl font-semibold tracking-tight">Select your organization</h2>
+          <p className="mt-1.5 max-w-sm text-sm leading-relaxed text-muted-foreground">
+            This account belongs to multiple organizations. Choose one to continue.
+          </p>
+        </div>
+
+        <div className="mt-7 space-y-2.5">
+          {organizations.map((org) => (
+            <button
+              key={org.id}
+              type="button"
+              disabled={busy}
+              onClick={() => onSelect(org.id)}
+              className="group flex w-full items-center gap-3 rounded-xl border border-border/60 bg-card/60 px-4 py-3 text-left transition-colors hover:border-primary/40 hover:bg-accent/40 disabled:opacity-60"
+            >
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-muted text-foreground">
+                <Building2 className="h-5 w-5" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-medium text-foreground">
+                  {org.name}
+                </span>
+                <span className="block truncate text-xs text-muted-foreground">{org.code}</span>
+              </span>
+              <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 group-hover:translate-x-0.5 group-hover:text-primary" />
+            </button>
+          ))}
+        </div>
+
+        <Button
+          type="button"
+          variant="ghost"
+          className="mt-4 h-10 w-full rounded-lg"
+          onClick={onBack}
+        >
+          Back to sign in
+        </Button>
+      </div>
+    </motion.div>
   );
 }
 
@@ -825,6 +989,175 @@ function MfaCard({
             Back to sign in
           </Button>
         </form>
+      </div>
+    </motion.div>
+  );
+}
+
+function MfaSetupCard({
+  startMfaEnroll,
+  confirmMfaEnroll,
+  onDone,
+}: {
+  startMfaEnroll: () => Promise<{ secret: string; otpauthUrl: string }>;
+  confirmMfaEnroll: (secret: string, code: string) => Promise<{ backupCodes: string[] }>;
+  onDone: () => void;
+}) {
+  const [enroll, setEnroll] = useState<{ secret: string; otpauthUrl: string } | null>(null);
+  const [code, setCode] = useState("");
+  const [backupCodes, setBackupCodes] = useState<string[] | null>(null);
+  const [acknowledged, setAcknowledged] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    setBusy(true);
+    startMfaEnroll()
+      .then((res) => {
+        if (active) setEnroll(res);
+      })
+      .catch((err) => toast.error(errorMessage(err, "Could not start MFA setup")))
+      .finally(() => {
+        if (active) setBusy(false);
+      });
+    return () => {
+      active = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleConfirm = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!enroll) return;
+    setBusy(true);
+    try {
+      const res = await confirmMfaEnroll(enroll.secret, code);
+      setBackupCodes(res.backupCodes);
+    } catch (err) {
+      setCode("");
+      toast.error(errorMessage(err, "Invalid verification code"));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const copyCodes = () => {
+    if (backupCodes) {
+      navigator.clipboard?.writeText(backupCodes.join("\n"));
+      toast.success("Backup codes copied");
+    }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 18, scale: 0.99 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+    >
+      <div className="rounded-2xl border border-border/60 bg-card/80 p-6 shadow-glass backdrop-blur-xl sm:p-8">
+        <div className="flex flex-col items-center text-center">
+          <div className="relative grid h-14 w-14 place-items-center rounded-2xl gradient-primary text-white shadow-glow">
+            <ShieldCheck className="h-7 w-7" />
+          </div>
+          <h2 className="mt-5 text-2xl font-semibold tracking-tight">
+            Two-factor authentication required
+          </h2>
+          <p className="mt-1.5 max-w-sm text-sm leading-relaxed text-muted-foreground">
+            Your role requires two-factor authentication. Set it up now to continue into your
+            organization.
+          </p>
+        </div>
+
+        {backupCodes ? (
+          <div className="mt-7 space-y-4">
+            <div className="rounded-xl border border-warning/40 bg-warning/5 p-4">
+              <p className="text-sm font-medium">Your backup codes</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Store these somewhere safe — each can be used once to sign in.
+              </p>
+              <div className="mt-3 grid grid-cols-2 gap-2 font-mono text-sm sm:grid-cols-3">
+                {backupCodes.map((c) => (
+                  <span key={c}>{c}</span>
+                ))}
+              </div>
+            </div>
+            <Button type="button" variant="outline" className="w-full" onClick={copyCodes}>
+              Copy codes
+            </Button>
+            <div className="flex items-start gap-2.5 text-[13px] text-muted-foreground">
+              <Checkbox
+                id="saved-codes"
+                checked={acknowledged}
+                onCheckedChange={(v) => setAcknowledged(v === true)}
+                className="mt-0.5 h-4 w-4 rounded-[4px]"
+              />
+              <label
+                htmlFor="saved-codes"
+                className="cursor-pointer select-none leading-relaxed"
+                onClick={() => setAcknowledged((v) => !v)}
+              >
+                I&apos;ve saved these backup codes in a safe place.
+              </label>
+            </div>
+            <Button
+              type="button"
+              disabled={!acknowledged}
+              onClick={onDone}
+              className="group h-11 w-full rounded-lg gradient-primary text-base text-white shadow-glow disabled:opacity-50"
+            >
+              Continue to dashboard
+              <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
+            </Button>
+          </div>
+        ) : (
+          <div className="mt-7 space-y-5">
+            {!enroll ? (
+              <p className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" /> Preparing authenticator setup…
+              </p>
+            ) : (
+              <>
+                <div className="rounded-lg bg-muted/40 p-3 text-center">
+                  <p className="text-xs text-muted-foreground">Scan with your authenticator app</p>
+                  <a
+                    href={enroll.otpauthUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-1 inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
+                  >
+                    <KeyRound className="h-4 w-4" /> Open authenticator setup
+                  </a>
+                  <p className="mt-2 font-mono text-sm tracking-widest">{enroll.secret}</p>
+                </div>
+
+                <form onSubmit={handleConfirm} className="space-y-4">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="setupCode" className="text-[13px]">
+                      Verification code
+                    </Label>
+                    <Input
+                      id="setupCode"
+                      value={code}
+                      onChange={(e) => setCode(e.target.value)}
+                      placeholder="000000"
+                      autoFocus
+                      required
+                      maxLength={6}
+                      className="h-11 rounded-lg text-center text-base tracking-[0.35em]"
+                    />
+                  </div>
+                  <Button
+                    type="submit"
+                    disabled={busy}
+                    className="group h-11 w-full rounded-lg gradient-primary text-base text-white shadow-glow"
+                  >
+                    {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : "Verify & enable"}
+                  </Button>
+                </form>
+              </>
+            )}
+          </div>
+        )}
       </div>
     </motion.div>
   );
