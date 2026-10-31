@@ -43,7 +43,7 @@ export function SignInPhonePanel({
     setError("");
     const trimmed = phone.trim();
     if (!/^\+?[1-9]\d{6,14}$/.test(trimmed)) {
-      setError("Enter a valid phone number in international format, e.g. +919876543210.");
+      setError("Enter a valid phone number in international format, e.g. +911234567890.");
       return;
     }
     if (secondsLeft > 0 && showWait) {

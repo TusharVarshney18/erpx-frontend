@@ -534,7 +534,7 @@ function AuthPage() {
     }
     if (cleanPhone && !/^\+?[1-9]\d{6,14}$/.test(cleanPhone)) {
       problems.push(
-        "Phone must be in international format with country code, e.g. +919876543210 (7–15 digits).",
+        "Phone must be in international format with country code, e.g. +911234567890 (7–15 digits).",
       );
     }
     if (problems.length > 0) {
@@ -814,7 +814,7 @@ function AuthPage() {
                     </div>
                     <p className="text-[11px] leading-relaxed text-muted-foreground">
                       Include your country code, e.g.{" "}
-                      <span className="font-medium text-foreground">+919876543210</span>. Spaces and
+                      <span className="font-medium text-foreground">+911234567890</span>. Spaces and
                       dashes are ignored.
                     </p>
                   </div>
