@@ -9,7 +9,8 @@ async function fetchWithTimeout(input: string, init: RequestInit = {}): Promise<
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   try {
-    return await fetch(input, { ...init, signal: controller.signal });
+    // Send the httpOnly trusted-device cookie on every API call.
+    return await fetch(input, { credentials: "include", ...init, signal: controller.signal });
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError") {
       throw new Error("The server took too long to respond. Please try again.");
@@ -195,13 +196,31 @@ async function request<T>(
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
+    const errorBody = body as {
+      code?: string;
+      module?: string;
+      requiredPlan?: string | null;
+      message?: string;
+    };
+    if (errorBody?.code === "FEATURE_LOCKED" && isBrowser) {
+      window.dispatchEvent(
+        new CustomEvent("erpx:feature-locked", {
+          detail: {
+            module: errorBody.module,
+            requiredPlan: errorBody.requiredPlan ?? null,
+            message: errorBody.message,
+          },
+        }),
+      );
+    }
     const err = new Error(
       (body && typeof body === "object" && "message" in body
         ? (body as { message?: string }).message
         : null) || `HTTP ${res.status}`,
-    ) as Error & { status?: number; data?: unknown };
+    ) as Error & { status?: number; data?: unknown; code?: string };
     err.status = res.status;
     err.data = body;
+    err.code = errorBody?.code;
     throw err;
   }
 

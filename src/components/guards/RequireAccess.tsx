@@ -54,8 +54,8 @@ export function RequireAccess({
   }
 
   // Premium gating: authorized but feature not in the plan -> show the lock,
-  // never a 403. Super Admin bypasses subscription gating.
-  if (featureKey && !access.isSuperAdmin) {
+  // never a 403. Super Admin and org admins bypass subscription gating.
+  if (featureKey && !access.isSuperAdmin && !access.isOrgAdmin) {
     const slug = FEATURE_SLUG_BY_ID[featureKey];
     if (slug && access.context.featureMap[slug] === false) {
       return <PremiumLocked featureLabel={featureLabel(featureKey)} plan={access.plan} />;

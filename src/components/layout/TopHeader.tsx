@@ -80,23 +80,31 @@ export function TopHeader() {
 
   const createItems = useMemo(() => {
     const can = access.hasPermission;
+    const hasModule = access.hasModule;
     const items: { to: string; label: string; icon: LucideIcon }[] = [];
-    const add = (to: string, label: string, icon: LucideIcon, perms: string[]) => {
+    const add = (
+      to: string,
+      label: string,
+      icon: LucideIcon,
+      perms: string[],
+      moduleKey?: Parameters<typeof hasModule>[0],
+    ) => {
+      if (moduleKey && !hasModule(moduleKey)) return;
       if (perms.some((p) => can(p))) items.push({ to, label, icon });
     };
-    add("/crm/leads", "Lead", UserPlus, ["lead:create"]);
-    add("/sales/customers", "Customer", Users, ["customer:create", "company:create"]);
-    add("/sales/quotations", "Quotation", FileText, ["quotation:create"]);
-    add("/sales/sales-orders", "Sales Order", ShoppingCart, ["sales_order:create"]);
-    add("/sales/invoices", "Invoice", ReceiptText, ["invoice:create"]);
+    add("/crm/leads", "Lead", UserPlus, ["lead:create"], "crm");
+    add("/sales/customers", "Customer", Users, ["customer:create", "company:create"], "sales");
+    add("/sales/quotations", "Quotation", FileText, ["quotation:create"], "sales");
+    add("/sales/sales-orders", "Sales Order", ShoppingCart, ["sales_order:create"], "sales");
+    add("/sales/invoices", "Invoice", ReceiptText, ["invoice:create"], "sales");
     add("/purchases/vendors", "Vendor", Briefcase, ["vendor:create"]);
     add("/purchases/purchase-orders", "Purchase Order", ShoppingCart, ["purchase_order:create"]);
-    add("/inventory/products", "Product", Package, ["product:create"]);
-    add("/hrms/employees", "Employee", Users, ["employee:create"]);
-    add("/accounting/chart-of-accounts", "Account", Scale, ["chart_of_account:create"]);
-    add("/accounting/journal-entries", "Journal Entry", FileText, ["journal_entry:create"]);
+    add("/inventory/products", "Product", Package, ["product:create"], "inventory");
+    add("/hrms/employees", "Employee", Users, ["employee:create"], "hrms");
+    add("/accounting/chart-of-accounts", "Account", Scale, ["chart_of_account:create"], "accounting");
+    add("/accounting/journal-entries", "Journal Entry", FileText, ["journal_entry:create"], "accounting");
     return items;
-  }, [access.hasPermission]);
+  }, [access.hasPermission, access.hasModule]);
   const [showCreateOrg, setShowCreateOrg] = useState(false);
   const [createLoading, setCreateLoading] = useState(false);
   const [orgName, setOrgName] = useState("");

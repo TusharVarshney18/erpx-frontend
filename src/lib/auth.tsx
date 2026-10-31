@@ -35,6 +35,11 @@ export type UserProfile = {
   isOrgAdmin?: boolean;
   isDemo?: boolean;
   currentSessionId?: string | null;
+  mfaEnabled?: boolean;
+  mfaPromptSnoozedUntil?: string | null;
+  mfaPromptDismissed?: boolean;
+  mfaRequiredForAdmins?: boolean;
+  mfaRequired?: boolean;
   roles?: UserRole[];
   permissions?: string[];
   subscription?: {
@@ -107,9 +112,23 @@ export type PhoneLoginCodeDelivery = {
   deliveredVia: string;
 };
 
-type MfaStatus = { enabled: boolean; enabledAt: string | null };
+export type MfaStatus = {
+  enabled: boolean;
+  enabledAt: string | null;
+  promptSnoozedUntil: string | null;
+  promptDismissed: boolean;
+};
 type MfaEnrollResult = { secret: string; otpauthUrl: string };
 type MfaEnrollConfirmResult = { backupCodes: string[] };
+
+export type TrustedDevice = {
+  id: string;
+  label: string | null;
+  ipAddress: string | null;
+  createdAt: string;
+  lastUsedAt: string;
+  expiresAt: string;
+};
 
 type RegisterResponse = {
   user: {
@@ -166,7 +185,12 @@ type AuthCtx = {
   organizations: OrganizationInfo[];
   activeOrganizationId: string | null;
   signIn: (email: string, password: string) => Promise<LoginResult>;
-  completeMfaLogin: (challenge: string, code: string) => Promise<void>;
+  completeMfaLogin: (challenge: string, code: string, trustDevice?: boolean) => Promise<void>;
+  refreshUser: () => Promise<void>;
+  setMfaPrompt: (action: "snooze" | "dismiss") => Promise<void>;
+  trustedDevices: () => Promise<TrustedDevice[]>;
+  revokeTrustedDevice: (id: string) => Promise<void>;
+  revokeAllTrustedDevices: () => Promise<void>;
   requestLoginCode: (email: string) => Promise<LoginCodeDelivery>;
   verifyLoginCode: (email: string, code: string) => Promise<LoginResult>;
   requestPhoneLoginCode: (phone: string) => Promise<PhoneLoginCodeDelivery>;
@@ -209,13 +233,23 @@ const Ctx = createContext<AuthCtx>({
   activeOrganizationId: null,
   signIn: async () => ({ step: "done", accessToken: "", refreshToken: "" }),
   completeMfaLogin: async () => {},
+  refreshUser: async () => {},
+  setMfaPrompt: async () => {},
+  trustedDevices: async () => [],
+  revokeTrustedDevice: async () => {},
+  revokeAllTrustedDevices: async () => {},
   requestLoginCode: async () => ({ maskedEmail: null, deliveredVia: "console" }),
   verifyLoginCode: async () => ({ step: "done", accessToken: "", refreshToken: "" }),
   requestPhoneLoginCode: async () => ({ maskedPhone: null, deliveredVia: "console" }),
   verifyPhoneLoginCode: async () => ({ step: "done", accessToken: "", refreshToken: "" }),
   completeOAuthLogin: async () => ({ step: "done", accessToken: "", refreshToken: "" }),
   selectOrganization: async () => ({ step: "done", accessToken: "", refreshToken: "" }),
-  mfaStatus: async () => ({ enabled: false, enabledAt: null }),
+  mfaStatus: async () => ({
+    enabled: false,
+    enabledAt: null,
+    promptSnoozedUntil: null,
+    promptDismissed: false,
+  }),
   startMfaEnroll: async () => ({ secret: "", otpauthUrl: "" }),
   confirmMfaEnroll: async () => ({ backupCodes: [] }),
   regenerateMfaBackupCodes: async () => ({ backupCodes: [] }),
@@ -350,12 +384,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const completeMfaLogin = useCallback(
-    async (challenge: string, code: string) => {
-      const data = await api.post<LoginResponse>("/auth/mfa/complete-login", { challenge, code });
+    async (challenge: string, code: string, trustDevice = true) => {
+      const data = await api.post<LoginResponse>("/auth/mfa/complete-login", {
+        challenge,
+        code,
+        trustDevice,
+      });
       await finalizeAuthenticated(data);
     },
     [finalizeAuthenticated],
   );
+
+  const setMfaPrompt = useCallback(async (action: "snooze" | "dismiss") => {
+    await api.post("/auth/mfa/prompt", { action });
+    try {
+      const profile = await api.get<UserProfile>("/auth/me");
+      setUser(profile);
+    } catch {
+      /* the modal can close optimistically */
+    }
+  }, []);
+
+  const trustedDevices = useCallback(async () => {
+    return api.get<TrustedDevice[]>("/auth/trusted-devices");
+  }, []);
+
+  const revokeTrustedDevice = useCallback(async (id: string) => {
+    await api.delete(`/auth/trusted-devices/${id}`);
+  }, []);
+
+  const revokeAllTrustedDevices = useCallback(async () => {
+    await api.delete("/auth/trusted-devices");
+  }, []);
 
   const requestLoginCode = useCallback(async (email: string) => {
     return api.post<LoginCodeDelivery>("/auth/login-otp/request", { email });
@@ -492,6 +552,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(null);
       setActiveOrganizationId(null);
       setOrganizations([]);
+      try {
+        sessionStorage.removeItem("erpx_mfa_prompt_shown");
+      } catch {
+        /* ignore */
+      }
     }
   }, []);
 
@@ -545,6 +610,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     activeOrganizationId,
     signIn,
     completeMfaLogin,
+    refreshUser: fetchMe,
+    setMfaPrompt,
+    trustedDevices,
+    revokeTrustedDevice,
+    revokeAllTrustedDevices,
     requestLoginCode,
     verifyLoginCode,
     requestPhoneLoginCode,

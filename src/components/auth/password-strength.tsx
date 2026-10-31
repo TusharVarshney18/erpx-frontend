@@ -18,23 +18,31 @@ function getPasswordScore(password: string): number {
 }
 
 export function PasswordStrength({ password }: { password: string }) {
-  if (!password) return null;
   const score = getPasswordScore(password);
   const level = LEVELS[score];
   return (
     <div className="space-y-1.5" aria-live="polite">
-      <div className="flex gap-1">
-        {[0, 1, 2, 3].map((i) => (
-          <span
-            key={i}
-            className={cn(
-              "h-1 flex-1 rounded-full bg-border/70 transition-colors duration-300",
-              i < score && level.bar,
-            )}
-          />
-        ))}
-      </div>
-      <p className={cn("text-[11px] font-medium", level.text)}>Password strength: {level.label}</p>
+      {password && (
+        <>
+          <div className="flex gap-1">
+            {[0, 1, 2, 3].map((i) => (
+              <span
+                key={i}
+                className={cn(
+                  "h-1 flex-1 rounded-full bg-border/70 transition-colors duration-300",
+                  i < score && level.bar,
+                )}
+              />
+            ))}
+          </div>
+          <p className={cn("text-[11px] font-medium", level.text)}>
+            Password strength: {level.label}
+          </p>
+        </>
+      )}
+      <p className="text-[11px] leading-relaxed text-muted-foreground">
+        Use at least 8 characters with a mix of letters, numbers and symbols.
+      </p>
     </div>
   );
 }

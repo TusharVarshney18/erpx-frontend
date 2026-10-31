@@ -8,7 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Loader2, ShieldCheck, ShieldOff, KeyRound, Copy } from "lucide-react";
+import { Loader2, ShieldCheck, ShieldOff, KeyRound, Copy, Download } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
+import { TrustedDevicesCard } from "@/components/security/TrustedDevicesCard";
 
 export const Route = createFileRoute("/security/mfa")({
   head: () => ({ meta: [{ title: "Two-factor authentication — ERPX" }] }),
@@ -116,6 +118,23 @@ function MfaPage() {
     toast.success("Backup codes copied");
   };
 
+  const downloadCodes = () => {
+    const blob = new Blob(
+      [
+        "ERPX two-factor backup codes\n",
+        "Each code can be used once. Store these somewhere safe.\n\n",
+        backupCodes.join("\n"),
+      ],
+      { type: "text/plain" },
+    );
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "erpx-backup-codes.txt";
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="mx-auto max-w-2xl space-y-4">
       <PageHeader
@@ -147,7 +166,7 @@ function MfaPage() {
                 </CardTitle>
                 <CardDescription className="mt-1">
                   {enabled
-                    ? "Your account requires a verification code when signing in."
+                    ? "Sign-in asks for a code unless this browser is trusted."
                     : "Add an extra layer of security to your account."}
                 </CardDescription>
               </div>
@@ -185,6 +204,9 @@ function MfaPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                <div className="mx-auto w-fit rounded-xl bg-white p-3 shadow-sm">
+                  <QRCodeSVG value={enroll.otpauthUrl} size={180} level="M" />
+                </div>
                 <div className="flex justify-center">
                   <a
                     href={enroll.otpauthUrl}
@@ -281,12 +303,29 @@ function MfaPage() {
                     ))}
                   </div>
                 </div>
-                <Button type="button" variant="outline" className="mt-3" onClick={copyCodes}>
-                  <Copy className="mr-2 h-4 w-4" /> Copy codes
-                </Button>
+                <div className="mt-3 flex gap-2">
+                  <Button type="button" variant="outline" onClick={copyCodes}>
+                    <Copy className="mr-2 h-4 w-4" /> Copy codes
+                  </Button>
+                  <Button type="button" variant="outline" onClick={downloadCodes}>
+                    <Download className="mr-2 h-4 w-4" /> Download
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           )}
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Trusted devices</CardTitle>
+              <CardDescription>
+                Remove a browser to require a 2FA code the next time it signs in.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <TrustedDevicesCard compact />
+            </CardContent>
+          </Card>
         </>
       )}
     </div>

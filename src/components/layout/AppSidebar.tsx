@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { ChevronRight, Sparkles } from "lucide-react";
+import { ChevronRight, Lock, Sparkles } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -21,6 +21,8 @@ import { useAccess } from "@/hooks/useAccess";
 import { getVisibleNavigation, type VisibleNavItem } from "@/lib/navigation-access";
 import { PremiumChip } from "@/components/premium/PremiumChip";
 import { Badge } from "@/components/ui/badge";
+import { useUpgradeModal } from "@/components/entitlements/UpgradeModalProvider";
+import { planLabel, type EntitlementModule } from "@/lib/entitlements";
 
 export function AppSidebar() {
   const { state } = useSidebar();
@@ -108,16 +110,78 @@ export function AppSidebar() {
 
 function SidebarItem({ item, pathname }: { item: VisibleNavItem; pathname: string }) {
   const Icon = item.icon;
+  const { openUpgrade } = useUpgradeModal();
+
+  const openLocked = () => {
+    if (!item.lockedModule) return;
+    openUpgrade({
+      module: item.lockedModule as EntitlementModule,
+      requiredPlan: item.requiredPlan ?? null,
+    });
+  };
+
+  const LockBadge = item.lockedModule ? (
+    <span className="ml-auto inline-flex shrink-0 items-center gap-1">
+      <Lock className="h-3 w-3 text-amber-500" aria-hidden="true" />
+      <Badge
+        variant="secondary"
+        className="h-4 rounded-full bg-amber-500/10 px-1.5 text-[9px] font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400"
+      >
+        {planLabel(item.requiredPlan)}
+      </Badge>
+    </span>
+  ) : item.locked ? (
+    <PremiumChip />
+  ) : item.hasLockedChild ? (
+    <span className="ml-auto inline-flex shrink-0 items-center" title="Some items are locked">
+      <Lock className="h-3 w-3 text-amber-500" aria-label="Some items are locked" />
+    </span>
+  ) : null;
+
   if (!item.children) {
     const active = item.url === pathname;
+    const content = (
+      <>
+        {Icon && <Icon className="h-4 w-4" />}
+        <span className="flex-1 truncate">{item.title}</span>
+        {LockBadge}
+      </>
+    );
+
+    if (item.locked && item.lockedModule) {
+      return (
+        <SidebarMenuItem key={item.title}>
+          <SidebarMenuButton
+            tooltip={`${item.title} — locked`}
+            onClick={openLocked}
+            className="text-muted-foreground"
+          >
+            {content}
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      );
+    }
+
     return (
       <SidebarMenuItem key={item.title}>
         <SidebarMenuButton asChild isActive={active} tooltip={item.title}>
-          <Link to={item.url!}>
-            {Icon && <Icon className="h-4 w-4" />}
-            <span className="flex-1 truncate">{item.title}</span>
-            {item.locked && <PremiumChip />}
-          </Link>
+          <Link to={item.url!}>{content}</Link>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+    );
+  }
+
+  if (item.locked && item.lockedModule) {
+    return (
+      <SidebarMenuItem key={item.title}>
+        <SidebarMenuButton
+          tooltip={`${item.title} — locked`}
+          onClick={openLocked}
+          className="text-muted-foreground"
+        >
+          {Icon && <Icon className="h-4 w-4" />}
+          <span>{item.title}</span>
+          {LockBadge}
         </SidebarMenuButton>
       </SidebarMenuItem>
     );
@@ -131,7 +195,7 @@ function SidebarItem({ item, pathname }: { item: VisibleNavItem; pathname: strin
           <SidebarMenuButton tooltip={item.title}>
             {Icon && <Icon className="h-4 w-4" />}
             <span>{item.title}</span>
-            {item.locked && <PremiumChip />}
+            {LockBadge}
             <ChevronRight className="ml-auto h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-90" />
           </SidebarMenuButton>
         </CollapsibleTrigger>
@@ -139,12 +203,34 @@ function SidebarItem({ item, pathname }: { item: VisibleNavItem; pathname: strin
           <SidebarMenuSub>
             {item.children.map((c) => (
               <SidebarMenuSubItem key={c.url}>
-                <SidebarMenuSubButton asChild isActive={pathname === c.url}>
-                  <Link to={c.url!}>
+                {c.locked && c.lockedModule ? (
+                  <SidebarMenuSubButton
+                    onClick={() =>
+                      openUpgrade({
+                        module: c.lockedModule as EntitlementModule,
+                        requiredPlan: c.requiredPlan ?? null,
+                      })
+                    }
+                    className="text-muted-foreground"
+                  >
                     <span className="flex-1 truncate">{c.title}</span>
-                  </Link>
-                </SidebarMenuSubButton>
-                {c.locked && <PremiumChip />}
+                    {c.lockedModule && (
+                      <span className="inline-flex items-center gap-1">
+                        <Lock className="h-3 w-3 text-amber-500" />
+                        <span className="text-[9px] font-semibold uppercase text-amber-600 dark:text-amber-400">
+                          {planLabel(c.requiredPlan)}
+                        </span>
+                      </span>
+                    )}
+                  </SidebarMenuSubButton>
+                ) : (
+                  <SidebarMenuSubButton asChild isActive={pathname === c.url}>
+                    <Link to={c.url!}>
+                      <span className="flex-1 truncate">{c.title}</span>
+                    </Link>
+                  </SidebarMenuSubButton>
+                )}
+                {c.locked && !c.lockedModule && <PremiumChip />}
               </SidebarMenuSubItem>
             ))}
           </SidebarMenuSub>

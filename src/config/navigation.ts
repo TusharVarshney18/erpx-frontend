@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import type { Permission } from "@/lib/access";
 import type { FeatureId } from "@/lib/featureAccess";
+import type { EntitlementModule } from "@/lib/entitlements";
 
 export type NavItem = {
   title: string;
@@ -28,6 +29,8 @@ export type NavItem = {
   permission?: Permission | Permission[];
   /** Premium feature gate (applied only after RBAC passes). */
   featureKey?: FeatureId;
+  /** Plan-module gate. Locked modules stay visible with a lock + plan badge. */
+  moduleKey?: EntitlementModule;
   /** Only visible to organization administrators (or users with the permission). */
   adminOnly?: boolean;
   /** Only visible to platform Super Admins. */
@@ -44,7 +47,7 @@ const createItems = (): NavGroup[] => [
   {
     label: "Overview",
     items: [
-      { title: "Dashboard", url: "/", icon: LayoutDashboard, permission: "dashboard:read" },
+      { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard, permission: "dashboard:read" },
       { title: "Notifications", url: "/notifications", icon: Bell },
     ],
   },
@@ -54,6 +57,7 @@ const createItems = (): NavGroup[] => [
       {
         title: "Accounting",
         icon: BookOpen,
+        moduleKey: "accounting",
         children: [
           { title: "Chart of Accounts", url: "/accounting/chart-of-accounts", permission: "chart_of_account:read" },
           { title: "Account Groups", url: "/accounting/account-groups", permission: "chart_of_account:read" },
@@ -74,6 +78,7 @@ const createItems = (): NavGroup[] => [
         title: "Banking",
         icon: Landmark,
         featureKey: "banking",
+        moduleKey: "banking",
         children: [
           { title: "Accounts", url: "/banking/accounts", permission: "banking:read" },
           { title: "Transactions", url: "/banking/transactions", permission: "banking:read" },
@@ -88,6 +93,7 @@ const createItems = (): NavGroup[] => [
       {
         title: "Sales",
         icon: ShoppingCart,
+        moduleKey: "sales",
         children: [
           { title: "Customers", url: "/sales/customers", permission: ["customer:read", "company:read"] },
           { title: "Quotations", url: "/sales/quotations", permission: "quotation:read" },
@@ -109,6 +115,7 @@ const createItems = (): NavGroup[] => [
       {
         title: "Inventory",
         icon: Package,
+        moduleKey: "inventory",
         children: [
           { title: "Products", url: "/inventory/products", permission: "product:read" },
           { title: "Categories", url: "/inventory/categories", permission: "category:read" },
@@ -125,6 +132,7 @@ const createItems = (): NavGroup[] => [
       {
         title: "CRM",
         icon: Users2,
+        moduleKey: "crm",
         children: [
           { title: "Leads", url: "/crm/leads", permission: "lead:read" },
           { title: "Opportunities", url: "/crm/opportunities", permission: "deal:read" },
@@ -134,11 +142,12 @@ const createItems = (): NavGroup[] => [
       {
         title: "HRMS",
         icon: Briefcase,
+        moduleKey: "hrms",
         children: [
           { title: "Employees", url: "/hrms/employees", permission: "employee:read" },
           { title: "Attendance", url: "/hrms/attendance", permission: "attendance:read" },
           { title: "Leaves", url: "/hrms/leaves", permission: "leave:read" },
-          { title: "Payroll", url: "/hrms/payroll", permission: "payroll:read" },
+          { title: "Payroll", url: "/hrms/payroll", permission: "payroll:read", moduleKey: "payroll" },
         ],
       },
     ],
@@ -149,6 +158,7 @@ const createItems = (): NavGroup[] => [
       {
         title: "Reports",
         icon: BarChart3,
+        moduleKey: "reports",
         children: [
           { title: "Financial Reports", url: "/reports/financial", permission: ["financial_report:read", "report:read"], featureKey: "advancedReports" },
           { title: "GST Reports", url: "/reports/gst", permission: ["gst_report:read", "report:read"], featureKey: "advancedReports" },

@@ -75,6 +75,10 @@ export interface AccessContext {
   features: string[];
   /** Feature slug -> available (from subscription) */
   featureMap: Record<string, boolean>;
+  /** Plan module -> enabled (from /me/entitlements). */
+  moduleMap: Record<string, boolean>;
+  /** Plan module -> minimum plan slug required. */
+  moduleRequiredPlan: Record<string, string | null>;
 }
 
 export const EMPTY_ACCESS: AccessContext = {
@@ -86,4 +90,6 @@ export const EMPTY_ACCESS: AccessContext = {
   plan: null,
   features: [],
   featureMap: {},
+  moduleMap: {},
+  moduleRequiredPlan: {},
 };

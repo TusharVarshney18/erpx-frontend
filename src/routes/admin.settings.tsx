@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth";
@@ -40,6 +40,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { GST_STATES } from "@/components/invoices/gst";
 import { Textarea } from "@/components/ui/textarea";
+import { TrustedDevicesCard } from "@/components/security/TrustedDevicesCard";
 import { toast } from "sonner";
 import {
   Building2,
@@ -97,6 +98,7 @@ type OrgSettings = {
   sessionTimeout: number;
   minPasswordLength: number;
   requireMfa: boolean;
+  requireMfaForAdmins: boolean;
   emailNotifications: boolean;
   inAppNotifications: boolean;
   // Seller / company profile (printed on invoices)
@@ -138,6 +140,7 @@ const DEFAULT_SETTINGS: OrgSettings = {
   sessionTimeout: 60,
   minPasswordLength: 8,
   requireMfa: false,
+  requireMfaForAdmins: false,
   emailNotifications: true,
   inAppNotifications: true,
   legalName: "",
@@ -222,6 +225,7 @@ function CompanySettingsPage() {
   const qc = useQueryClient();
   const { activeOrganizationId, switchOrganization, user, isSuperAdmin } = useAuth();
   const isAdmin = user?.isOrgAdmin === true || isSuperAdmin;
+  const isOwner = isSuperAdmin || user?.roles?.some((role) => role.isOwner) === true;
 
   const [showCreate, setShowCreate] = useState(false);
   const [editing, setEditing] = useState<Organization | null>(null);
@@ -641,6 +645,43 @@ function CompanySettingsPage() {
                         onCheckedChange={(v) => updateSetting("requireMfa", v)}
                       />
                     </div>
+                    <div className="flex items-center justify-between rounded-lg border border-border p-4">
+                      <div>
+                        <p className="text-sm font-medium">Require 2FA for admins/owners</p>
+                        <p className="text-xs text-muted-foreground">
+                          Owners and admins must enable two-factor authentication before entering
+                          the workspace.
+                        </p>
+                        {!isOwner && (
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            Only an organization owner can change this setting.
+                          </p>
+                        )}
+                      </div>
+                      <Switch
+                        checked={settings.requireMfaForAdmins}
+                        disabled={!isOwner}
+                        onCheckedChange={(v) => updateSetting("requireMfaForAdmins", v)}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between rounded-lg border border-border p-4">
+                      <div>
+                        <p className="text-sm font-medium">Your two-factor authentication</p>
+                        <p className="text-xs text-muted-foreground">
+                          {user?.mfaEnabled
+                            ? "Enabled on your account."
+                            : "Not enabled yet — add an authenticator app."}
+                        </p>
+                      </div>
+                      <Button variant="outline" size="sm" asChild>
+                        <Link to="/security/mfa">
+                          {user?.mfaEnabled ? "Manage 2FA" : "Enable 2FA"}
+                        </Link>
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="rounded-lg border border-border p-4">
+                    <TrustedDevicesCard compact />
                   </div>
                   <div className="grid gap-4 lg:grid-cols-2">
                     <Card>

@@ -14,6 +14,7 @@ import {
   AlertCircle,
   ArrowRight,
   Building2,
+  Download,
   Eye,
   EyeOff,
   History,
@@ -36,14 +37,18 @@ import {
 import { QRCodeSVG } from "qrcode.react";
 import { SsoSection } from "@/components/auth/social-buttons";
 import { PasswordStrength } from "@/components/auth/password-strength";
+import { AuthTrustLine, InlineError } from "@/components/auth/auth-extras";
 import { SignInCodePanel } from "@/components/auth/sign-in-code";
 import { SignInPhonePanel } from "@/components/auth/sign-in-phone";
+import { planForSelection } from "@/config/plans";
+import { ErpxMascot } from "@/components/auth/ErpxMascot";
 
 export const Route = createFileRoute("/auth")({
   validateSearch: z.object({
     email: z.string().optional(),
     oauth_grant: z.string().optional(),
     oauth_error: z.string().optional(),
+    plan: z.string().optional(),
   }),
   head: () => ({ meta: [{ title: "Sign in — ERPX" }] }),
   component: AuthPage,
@@ -73,9 +78,9 @@ const FEATURES: { icon: LucideIcon; title: string; desc: string }[] = [
 ];
 
 const METRICS: { value: string; label: string }[] = [
-  { value: "10+", label: "Modules included" },
-  { value: "5", label: "Core suites" },
-  { value: "INR", label: "GST-ready" },
+  { value: "5", label: "Connected suites" },
+  { value: "GST", label: "Ready invoicing" },
+  { value: "1", label: "Shared workspace" },
 ];
 
 const TRUST_POINTS: { icon: LucideIcon; title: string }[] = [
@@ -91,7 +96,7 @@ function AuthShell({ children }: { children: React.ReactNode }) {
       <main className="relative flex min-h-screen w-full flex-col justify-center overflow-hidden px-4 py-6 sm:px-8 lg:w-[54%] lg:py-8">
         <div className="pointer-events-none absolute inset-0">
           <div className="absolute -top-40 right-[-12%] h-[28rem] w-[28rem] rounded-full bg-primary/10 blur-3xl" />
-          <div className="absolute bottom-[-18%] left-[-8%] h-[26rem] w-[26rem] rounded-full bg-[#6366f1]/10 blur-3xl" />
+          <div className="absolute bottom-[-18%] left-[-8%] h-[26rem] w-[26rem] rounded-full bg-primary/10 blur-3xl" />
         </div>
 
         <div className="relative mx-auto w-full max-w-[440px]">
@@ -103,6 +108,7 @@ function AuthShell({ children }: { children: React.ReactNode }) {
           </div>
           {children}
         </div>
+
       </main>
     </div>
   );
@@ -126,9 +132,9 @@ function BrandPanel() {
   return (
     <aside className="relative hidden w-[46%] shrink-0 flex-col justify-between overflow-hidden bg-sidebar p-8 text-sidebar-foreground lg:flex xl:p-12">
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -right-24 -top-24 h-96 w-96 rounded-full bg-[#6366f1]/30 blur-[120px]" />
-        <div className="absolute -bottom-32 -left-24 h-[30rem] w-[30rem] rounded-full bg-[#a855f7]/20 blur-[140px]" />
-        <div className="absolute left-1/3 top-1/2 h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#0ea5e9]/15 blur-[120px]" />
+        <div className="absolute -right-24 -top-24 h-96 w-96 rounded-full bg-primary/20 blur-[120px]" />
+        <div className="absolute -bottom-32 -left-24 h-[30rem] w-[30rem] rounded-full bg-blue-600/10 blur-[140px]" />
+        <div className="absolute left-1/3 top-1/2 h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full bg-blue-300/10 blur-[120px]" />
         <div
           className="absolute inset-0 opacity-60"
           style={{
@@ -161,7 +167,7 @@ function BrandPanel() {
           variants={fadeUp}
           className="flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-[11px] font-medium uppercase tracking-wider text-white/70 backdrop-blur"
         >
-          <Sparkles className="h-3 w-3 text-sky-300" />
+          <Sparkles className="h-3 w-3 text-blue-300" />
           All-in-one ERP
         </motion.div>
       </motion.header>
@@ -174,7 +180,7 @@ function BrandPanel() {
       >
         <motion.div variants={fadeUp} className="space-y-4">
           <h1 className="max-w-xl text-[1.75rem] font-semibold leading-[1.14] tracking-tight text-white xl:text-[2.25rem]">
-            Run your entire business on <span className="text-sky-300">one platform</span>.
+            Run your entire business on <span className="text-blue-300">one platform</span>.
           </h1>
           <p className="max-w-md text-[15px] leading-relaxed text-white/75">
             Everything your team needs to sell, bill, track and grow — accounting, sales, inventory,
@@ -185,7 +191,7 @@ function BrandPanel() {
         <motion.ul variants={fadeUp} className="grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
           {FEATURES.map((f) => (
             <li key={f.title} className="flex items-start gap-3">
-              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-white/10 bg-white/5 text-sky-300">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-white/10 bg-white/5 text-blue-300">
                 <f.icon className="h-4 w-4" />
               </span>
               <span>
@@ -209,7 +215,7 @@ function BrandPanel() {
               key={t.title}
               className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 backdrop-blur"
             >
-              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-white/10 bg-white/5 text-sky-300">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-white/10 bg-white/5 text-blue-300">
                 <t.icon className="h-4 w-4" />
               </span>
               <span className="text-[13px] font-medium text-white/90">{t.title}</span>
@@ -254,7 +260,7 @@ function BrandPanel() {
 
 function AuthPage() {
   const nav = useNavigate();
-  const { email: initialEmail, oauth_grant, oauth_error } = useSearch({ from: "/auth" });
+  const { email: initialEmail, oauth_grant, oauth_error, plan } = useSearch({ from: "/auth" });
   const {
     user,
     loading,
@@ -276,10 +282,24 @@ function AuthPage() {
   const [phone, setPhone] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [authError, setAuthError] = useState("");
   const [codeMode, setCodeMode] = useState(false);
   const [phoneMode, setPhoneMode] = useState(false);
   const [phoneOtpEnabled, setPhoneOtpEnabled] = useState(false);
   const [rememberEmail, setRememberEmail] = useState(false);
+
+  // A plan chosen on the marketing pricing page is carried through signup in
+  // the URL and kept for the rest of the session so it is never lost while the
+  // visitor creates a workspace.
+  const requestedPlan = planForSelection(plan);
+  useEffect(() => {
+    if (!plan) return;
+    try {
+      sessionStorage.setItem("erpx_selected_plan", plan);
+    } catch {
+      /* storage can be unavailable in private mode — the URL still carries it */
+    }
+  }, [plan]);
 
   // OAuth redirect-result state
   const [oauthBusy, setOauthBusy] = useState(false);
@@ -289,6 +309,11 @@ function AuthPage() {
   // MFA step state
   const [mfaChallenge, setMfaChallenge] = useState<string | null>(null);
   const [mfaCode, setMfaCode] = useState("");
+  const [trustDevice, setTrustDevice] = useState(true);
+
+  useEffect(() => {
+    if (mfaChallenge) setTrustDevice(true);
+  }, [mfaChallenge]);
 
   // Mandatory MFA setup (owner/admin without MFA)
   const [mfaSetup, setMfaSetup] = useState(false);
@@ -398,6 +423,7 @@ function AuthPage() {
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    setAuthError("");
     setBusy(true);
     try {
       const result = await signIn(email, password);
@@ -425,7 +451,7 @@ function AuthPage() {
       toast.success("Welcome back!");
       nav({ to: "/" });
     } catch (err) {
-      toast.error(errorMessage(err, "Invalid email or password"));
+      setAuthError(errorMessage(err, "Invalid email or password"));
     } finally {
       setBusy(false);
     }
@@ -433,6 +459,7 @@ function AuthPage() {
 
   const handleSelectOrg = async (orgId: string) => {
     if (!orgSelection) return;
+    setAuthError("");
     setBusy(true);
     try {
       const result = await selectOrganization(orgSelection.selectionToken, orgId);
@@ -449,7 +476,7 @@ function AuthPage() {
       toast.success("Welcome back!");
       nav({ to: "/" });
     } catch (err) {
-      toast.error(errorMessage(err, "Could not select organization. Please try again."));
+      setAuthError(errorMessage(err, "Could not select organization. Please try again."));
     } finally {
       setBusy(false);
     }
@@ -458,13 +485,14 @@ function AuthPage() {
   const handleMfaVerify = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!mfaChallenge) return;
+    setAuthError("");
     setBusy(true);
     try {
-      await completeMfaLogin(mfaChallenge, mfaCode);
+      await completeMfaLogin(mfaChallenge, mfaCode, trustDevice);
       toast.success("Welcome back!");
       nav({ to: "/" });
     } catch (err) {
-      toast.error(errorMessage(err, "Invalid verification code"));
+      setAuthError(errorMessage(err, "Invalid verification code"));
     } finally {
       setBusy(false);
     }
@@ -472,6 +500,7 @@ function AuthPage() {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    setAuthError("");
     setBusy(true);
     try {
       const result = await signUp({
@@ -493,11 +522,15 @@ function AuthPage() {
         }
         nav({ to: "/verify-email", search: { email } });
       } else {
-        toast.success("Account created. Welcome!");
+        toast.success(
+          requestedPlan
+            ? `Account created. ${requestedPlan.name} plan selected.`
+            : "Account created. Welcome!",
+        );
         nav({ to: "/" });
       }
     } catch (err) {
-      toast.error(errorMessage(err, "Registration failed"));
+      setAuthError(errorMessage(err, "Registration failed"));
     } finally {
       setBusy(false);
     }
@@ -511,8 +544,12 @@ function AuthPage() {
         <OrgPickerCard
           organizations={orgSelection.organizations}
           busy={busy}
+          error={authError}
           onSelect={handleSelectOrg}
-          onBack={() => setOrgSelection(null)}
+          onBack={() => {
+            setOrgSelection(null);
+            setAuthError("");
+          }}
         />
       ) : mfaSetup ? (
         <MfaSetupCard
@@ -527,11 +564,15 @@ function AuthPage() {
         <MfaCard
           busy={busy}
           mfaCode={mfaCode}
+          error={authError}
+          trustDevice={trustDevice}
+          onTrustDeviceChange={setTrustDevice}
           onCodeChange={setMfaCode}
           onVerify={handleMfaVerify}
           onBack={() => {
             setMfaChallenge(null);
             setMfaCode("");
+            setAuthError("");
           }}
         />
       ) : oauthBusy ? (
@@ -563,10 +604,22 @@ function AuthPage() {
                 </button>
               </div>
             )}
+            {requestedPlan && isSignUp ? (
+              <div className="mb-5 flex items-start gap-2.5 rounded-xl border border-sky-300/30 bg-sky-400/[0.07] px-3.5 py-3 text-sm">
+                <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-sky-500" />
+                <p className="leading-relaxed text-foreground">
+                  <span className="font-medium">{requestedPlan.name} plan selected.</span>{" "}
+                  <span className="text-muted-foreground">
+                    Create your workspace to continue — you can change plans anytime.
+                  </span>
+                </p>
+              </div>
+            ) : null}
             <Tabs
               value={tab}
               onValueChange={(v) => {
                 setTab(v);
+                setAuthError("");
                 if (v === "signup") {
                   setCodeMode(false);
                   setPhoneMode(false);
@@ -590,18 +643,27 @@ function AuthPage() {
                 </TabsTrigger>
               </TabsList>
 
-              <div className="mt-5 space-y-1.5">
-                <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">
-                  {isSignUp ? "Create your workspace" : "Welcome back"}
-                </h2>
-                <p className="text-sm leading-relaxed text-muted-foreground">
-                  {isSignUp
-                    ? "Set up your organization and invite your team to get started."
-                    : "Enter your details to access your organization dashboard."}
-                </p>
+              <div className="mt-5 flex items-start justify-between gap-3">
+                <div className="min-w-0 space-y-1.5">
+                  <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">
+                    {isSignUp ? "Create your workspace" : "Welcome back"}
+                  </h2>
+                  <p className="text-sm leading-relaxed text-muted-foreground">
+                    {isSignUp
+                      ? "Set up your organization in minutes — no credit card required."
+                      : "Enter your details to access your organization dashboard."}
+                  </p>
+                </div>
+                {!isSignUp && (
+                  <ErpxMascot className="h-16 w-14 shrink-0 sm:h-20 sm:w-16" />
+                )}
               </div>
 
-              {!isSignUp && <SsoSection onGoogle={handleGoogleSignIn} />}
+              {!isSignUp && (
+                <div className="mt-5">
+                  <SsoSection onGoogle={handleGoogleSignIn} />
+                </div>
+              )}
 
               <form
                 onSubmit={(e) => {
@@ -625,7 +687,8 @@ function AuthPage() {
                         value={firstName}
                         onChange={(e) => setFirstName(e.target.value)}
                         placeholder="Jane"
-                        className="h-10 rounded-lg"
+                        className="h-11 rounded-lg"
+                        disabled={busy}
                         required
                       />
                     </div>
@@ -638,7 +701,8 @@ function AuthPage() {
                         value={lastName}
                         onChange={(e) => setLastName(e.target.value)}
                         placeholder="Doe"
-                        className="h-10 rounded-lg"
+                        className="h-11 rounded-lg"
+                        disabled={busy}
                         required
                       />
                     </div>
@@ -652,7 +716,8 @@ function AuthPage() {
                       value={orgName}
                       onChange={(e) => setOrgName(e.target.value)}
                       placeholder="Acme Inc"
-                      className="h-10 rounded-lg"
+                      className="h-11 rounded-lg"
+                      disabled={busy}
                       required
                     />
                   </div>
@@ -667,7 +732,8 @@ function AuthPage() {
                       placeholder="acme-inc"
                       pattern="^[a-z0-9-]+$"
                       title="Lowercase letters, numbers, and hyphens only"
-                      className="h-10 rounded-lg"
+                      className="h-11 rounded-lg"
+                      disabled={busy}
                       required
                     />
                   </div>
@@ -686,7 +752,8 @@ function AuthPage() {
                         onChange={(e) => setPhone(e.target.value)}
                         placeholder="+91 98765 43210"
                         autoComplete="tel"
-                        className="h-10 rounded-lg pl-10"
+                        className="h-11 rounded-lg pl-10"
+                        disabled={busy}
                       />
                     </div>
                   </div>
@@ -706,7 +773,8 @@ function AuthPage() {
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="you@company.com"
                         autoComplete="email"
-                        className="h-10 rounded-lg pl-10"
+                        className="h-11 rounded-lg pl-10"
+                        disabled={busy}
                         required
                       />
                     </div>
@@ -715,20 +783,9 @@ function AuthPage() {
 
                 {!codeMode && !phoneMode && (
                   <div className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="password" className="text-[13px]">
-                        Password
-                      </Label>
-                      {!isSignUp && (
-                        <button
-                          type="button"
-                          className="text-xs font-medium text-primary hover:underline"
-                          onClick={() => nav({ to: "/forgot-password" })}
-                        >
-                          Forgot password?
-                        </button>
-                      )}
-                    </div>
+                    <Label htmlFor="password" className="text-[13px]">
+                      Password
+                    </Label>
                     <div className="relative">
                       <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                       <Input
@@ -738,7 +795,8 @@ function AuthPage() {
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="Enter your password"
                         autoComplete={isSignUp ? "new-password" : "current-password"}
-                        className="h-10 rounded-lg pl-10 pr-10"
+                        className="h-11 rounded-lg pl-10 pr-10"
+                        disabled={busy}
                         required
                         minLength={8}
                       />
@@ -787,79 +845,91 @@ function AuthPage() {
                   />
                 ) : (
                   <div className="space-y-4">
+                    <InlineError>{authError}</InlineError>
                     {!isSignUp && (
-                      <div className="flex items-center gap-2 text-[13px] text-muted-foreground">
-                        <Checkbox
-                          id="remember"
-                          checked={rememberEmail}
-                          onCheckedChange={(v) => setRememberEmail(v === true)}
-                          className="h-4 w-4 rounded-[4px]"
-                        />
-                        <span
-                          className="cursor-pointer select-none"
-                          onClick={() => setRememberEmail((v) => !v)}
+                      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+                        <label
+                          htmlFor="remember"
+                          className="flex cursor-pointer select-none items-center gap-2 text-[13px] text-muted-foreground outline-none"
                         >
-                          Remember email on this device
-                        </span>
+                          <Checkbox
+                            id="remember"
+                            checked={rememberEmail}
+                            onCheckedChange={(v) => setRememberEmail(v === true)}
+                            className="h-4 w-4 rounded-[4px] data-[state=unchecked]:border-muted-foreground/40"
+                          />
+                          Remember email
+                        </label>
+                        <button
+                          type="button"
+                          className="rounded text-[13px] font-medium text-primary outline-none transition-colors hover:text-primary/80 hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                          onClick={() => nav({ to: "/forgot-password" })}
+                        >
+                          Forgot password?
+                        </button>
                       </div>
                     )}
-                    <Button
-                      type="submit"
-                      disabled={busy}
-                      className="group h-10 w-full rounded-lg gradient-primary text-base text-white shadow-glow transition-transform duration-200 hover:scale-[1.01] active:scale-[0.99]"
-                    >
-                      {busy ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <>
-                          {isSignUp ? "Create account" : "Sign in"}
-                          <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
-                        </>
-                      )}
-                    </Button>
-                    {!isSignUp && (
-                      <div className="!mt-0 space-y-2 text-center">
-                        <p>
-                          <button
+                    <div className="!mt-6 space-y-4">
+                      <Button
+                        type="submit"
+                        disabled={busy}
+                        className="group h-11 w-full rounded-lg gradient-primary text-base text-white shadow-glow transition-transform duration-200 hover:scale-[1.01] active:scale-[0.99]"
+                      >
+                        {busy ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            {isSignUp ? "Creating account…" : "Signing in…"}
+                          </>
+                        ) : (
+                          <>
+                            {isSignUp ? "Create account" : "Sign in"}
+                            <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
+                          </>
+                        )}
+                      </Button>
+                      <AuthTrustLine />
+                      {!isSignUp && (
+                        <div className="space-y-2 pt-1 text-center">
+                          <Button
                             type="button"
-                            className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-primary"
+                            variant="ghost"
+                            className="h-10 w-full rounded-lg text-[13px] font-medium text-primary hover:bg-primary/5 hover:text-primary"
                             onClick={() => setCodeMode(true)}
                           >
-                            <KeyRound className="h-3.5 w-3.5" />
-                            Prefer no password? Get a sign-in code instead
-                          </button>
-                        </p>
-                        {phoneOtpEnabled && (
-                          <p>
-                            <button
+                            <KeyRound className="h-4 w-4" />
+                            Get a sign-in code instead
+                          </Button>
+                          {phoneOtpEnabled && (
+                            <Button
                               type="button"
-                              className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-primary"
+                              variant="ghost"
+                              className="h-10 w-full rounded-lg text-[13px] font-medium text-primary hover:bg-primary/5 hover:text-primary"
                               onClick={() => setPhoneMode(true)}
                             >
-                              <Phone className="h-3.5 w-3.5" />
+                              <Phone className="h-4 w-4" />
                               Sign in with a phone code
-                            </button>
+                            </Button>
+                          )}
+                          <p className="pt-1 text-[11px] leading-relaxed text-muted-foreground">
+                            By continuing, you agree to our{" "}
+                            <a
+                              href="/terms"
+                              className="font-medium text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+                            >
+                              Terms
+                            </a>{" "}
+                            and{" "}
+                            <a
+                              href="/privacy"
+                              className="font-medium text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+                            >
+                              Privacy Policy
+                            </a>
+                            .
                           </p>
-                        )}
-                        <p className="pt-1 text-[11px] leading-relaxed text-muted-foreground">
-                          By continuing, you agree to our{" "}
-                          <a
-                            href="/terms"
-                            className="font-medium text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
-                          >
-                            Terms
-                          </a>{" "}
-                          and{" "}
-                          <a
-                            href="/privacy"
-                            className="font-medium text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
-                          >
-                            Privacy Policy
-                          </a>
-                          .
-                        </p>
-                      </div>
-                    )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
               </form>
@@ -874,11 +944,13 @@ function AuthPage() {
 function OrgPickerCard({
   organizations,
   busy,
+  error,
   onSelect,
   onBack,
 }: {
   organizations: OrganizationOption[];
   busy: boolean;
+  error?: string;
   onSelect: (orgId: string) => void;
   onBack: () => void;
 }) {
@@ -899,7 +971,9 @@ function OrgPickerCard({
           </p>
         </div>
 
-        <div className="mt-7 space-y-2.5">
+        <InlineError className="mt-5">{error}</InlineError>
+
+        <div className="mt-5 space-y-2.5">
           {organizations.map((org) => (
             <button
               key={org.id}
@@ -938,13 +1012,19 @@ function OrgPickerCard({
 function MfaCard({
   busy,
   mfaCode,
+  error,
+  trustDevice,
   onCodeChange,
+  onTrustDeviceChange,
   onVerify,
   onBack,
 }: {
   busy: boolean;
   mfaCode: string;
+  error?: string;
+  trustDevice: boolean;
   onCodeChange: (v: string) => void;
+  onTrustDeviceChange: (v: boolean) => void;
   onVerify: (e: React.FormEvent) => void;
   onBack: () => void;
 }) {
@@ -956,19 +1036,21 @@ function MfaCard({
     >
       <div className="rounded-2xl border border-border/60 bg-card/80 p-6 shadow-glass backdrop-blur-xl sm:p-8">
         <div className="flex flex-col items-center text-center">
-          <div className="relative">
-            <span className="absolute inset-0 -m-1.5 animate-ping rounded-2xl bg-primary/20" />
-            <div className="relative grid h-14 w-14 place-items-center rounded-2xl gradient-primary text-white shadow-glow">
+          <div className="relative grid h-14 w-14 place-items-center">
+            <span className="absolute inset-0 animate-ping rounded-full bg-primary/20" />
+            <div className="relative grid h-14 w-14 place-items-center rounded-full gradient-primary text-white shadow-glow">
               <ShieldCheck className="h-7 w-7" />
             </div>
           </div>
           <h2 className="mt-5 text-2xl font-semibold tracking-tight">Two-factor authentication</h2>
-          <p className="mt-1.5 max-w-sm text-sm leading-relaxed text-muted-foreground">
+          <p className="mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">
             Enter the 6-digit code from your authenticator app (or a backup code) to continue.
           </p>
         </div>
 
-        <form onSubmit={onVerify} className="mt-7 space-y-5">
+        <InlineError className="mt-5">{error}</InlineError>
+
+        <form onSubmit={onVerify} className="mt-5 space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="mfaCode" className="text-[13px]">
               Verification code
@@ -983,27 +1065,51 @@ function MfaCard({
                 autoFocus
                 required
                 maxLength={16}
-                className="h-10 rounded-lg pl-10 text-center text-base tracking-[0.35em]"
+                disabled={busy}
+                aria-invalid={Boolean(error)}
+                className="h-11 rounded-lg pl-10 text-center text-base tracking-[0.35em]"
               />
             </div>
           </div>
-          <Button
-            type="submit"
-            disabled={busy}
-            className="group h-10 w-full rounded-lg gradient-primary text-base text-white shadow-glow transition-transform duration-200 hover:scale-[1.01] active:scale-[0.99]"
-          >
-            {busy ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <>
-                Verify
-                <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
-              </>
-            )}
-          </Button>
-          <Button type="button" variant="ghost" className="h-10 w-full rounded-lg" onClick={onBack}>
-            Back to sign in
-          </Button>
+          <div className="!mt-6 space-y-4">
+            <div className="flex items-center gap-2.5 text-[13px] text-muted-foreground">
+              <Checkbox
+                id="trust-device"
+                checked={trustDevice}
+                onCheckedChange={(value) => onTrustDeviceChange(value === true)}
+                className="h-4 w-4 rounded-[4px]"
+              />
+              <label htmlFor="trust-device" className="cursor-pointer select-none leading-relaxed">
+                Trust this device for 30 days
+              </label>
+            </div>
+            <Button
+              type="submit"
+              disabled={busy}
+              className="group h-11 w-full rounded-lg gradient-primary text-base text-white shadow-glow transition-transform duration-200 hover:scale-[1.01] active:scale-[0.99]"
+            >
+              {busy ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Verifying…
+                </>
+              ) : (
+                <>
+                  Verify
+                  <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
+                </>
+              )}
+            </Button>
+            <AuthTrustLine />
+            <Button
+              type="button"
+              variant="ghost"
+              className="h-10 w-full rounded-lg text-muted-foreground hover:text-foreground"
+              onClick={onBack}
+            >
+              Back to sign in
+            </Button>
+          </div>
         </form>
       </div>
     </motion.div>
@@ -1024,6 +1130,7 @@ function MfaSetupCard({
   const [backupCodes, setBackupCodes] = useState<string[] | null>(null);
   const [acknowledged, setAcknowledged] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [setupError, setSetupError] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -1032,7 +1139,9 @@ function MfaSetupCard({
       .then((res) => {
         if (active) setEnroll(res);
       })
-      .catch((err) => toast.error(errorMessage(err, "Could not start MFA setup")))
+      .catch((err) => {
+        if (active) setSetupError(errorMessage(err, "Could not start MFA setup"));
+      })
       .finally(() => {
         if (active) setBusy(false);
       });
@@ -1046,12 +1155,13 @@ function MfaSetupCard({
     e.preventDefault();
     if (!enroll) return;
     setBusy(true);
+    setSetupError("");
     try {
       const res = await confirmMfaEnroll(enroll.secret, code);
       setBackupCodes(res.backupCodes);
     } catch (err) {
       setCode("");
-      toast.error(errorMessage(err, "Invalid verification code"));
+      setSetupError(errorMessage(err, "Invalid verification code"));
     } finally {
       setBusy(false);
     }
@@ -1062,6 +1172,24 @@ function MfaSetupCard({
       navigator.clipboard?.writeText(backupCodes.join("\n"));
       toast.success("Backup codes copied");
     }
+  };
+
+  const downloadCodes = () => {
+    if (!backupCodes) return;
+    const blob = new Blob(
+      [
+        "ERPX two-factor backup codes\n",
+        "Each code can be used once. Store these somewhere safe.\n\n",
+        backupCodes.join("\n"),
+      ],
+      { type: "text/plain" },
+    );
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "erpx-backup-codes.txt";
+    link.click();
+    URL.revokeObjectURL(url);
   };
 
   const copySecret = () => {
@@ -1091,6 +1219,8 @@ function MfaSetupCard({
           </p>
         </div>
 
+        <InlineError className="mt-5">{setupError}</InlineError>
+
         {backupCodes ? (
           <div className="mt-7 space-y-4">
             <div className="rounded-xl border border-warning/40 bg-warning/5 p-4">
@@ -1104,9 +1234,14 @@ function MfaSetupCard({
                 ))}
               </div>
             </div>
-            <Button type="button" variant="outline" className="w-full" onClick={copyCodes}>
-              Copy codes
-            </Button>
+            <div className="flex gap-2">
+              <Button type="button" variant="outline" className="flex-1" onClick={copyCodes}>
+                Copy codes
+              </Button>
+              <Button type="button" variant="outline" className="flex-1" onClick={downloadCodes}>
+                <Download className="mr-1.5 h-3.5 w-3.5" /> Download
+              </Button>
+            </div>
             <div className="flex items-start gap-2.5 text-[13px] text-muted-foreground">
               <Checkbox
                 id="saved-codes"
@@ -1126,7 +1261,7 @@ function MfaSetupCard({
               type="button"
               disabled={!acknowledged}
               onClick={onDone}
-              className="group h-10 w-full rounded-lg gradient-primary text-base text-white shadow-glow disabled:opacity-50"
+              className="group h-11 w-full rounded-lg gradient-primary text-base text-white shadow-glow disabled:opacity-50"
             >
               Continue to dashboard
               <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
@@ -1180,7 +1315,7 @@ function MfaSetupCard({
                   </a>
                 </div>
 
-                <form onSubmit={handleConfirm} className="space-y-4">
+                <form onSubmit={handleConfirm} className="!mt-6 space-y-4">
                   <div className="space-y-1.5">
                     <Label htmlFor="setupCode" className="text-[13px]">
                       Verification code
@@ -1193,16 +1328,26 @@ function MfaSetupCard({
                       autoFocus
                       required
                       maxLength={6}
-                      className="h-10 rounded-lg text-center text-base tracking-[0.35em]"
+                      disabled={busy}
+                      aria-invalid={Boolean(setupError)}
+                      className="h-11 rounded-lg text-center text-base tracking-[0.35em]"
                     />
                   </div>
                   <Button
                     type="submit"
                     disabled={busy}
-                    className="group h-10 w-full rounded-lg gradient-primary text-base text-white shadow-glow"
+                    className="group h-11 w-full rounded-lg gradient-primary text-base text-white shadow-glow"
                   >
-                    {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : "Verify & enable"}
+                    {busy ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Verifying…
+                      </>
+                    ) : (
+                      "Verify & enable"
+                    )}
                   </Button>
+                  <AuthTrustLine />
                 </form>
               </>
             )}

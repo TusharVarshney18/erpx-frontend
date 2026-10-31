@@ -8,7 +8,7 @@ export function SsoSection({ onGoogle }: { onGoogle: () => void }) {
         type="button"
         variant="outline"
         onClick={onGoogle}
-        className="h-10 w-full rounded-lg border-border bg-card/60 font-medium text-foreground shadow-sm transition-colors hover:bg-accent/50 hover:text-foreground"
+        className="h-11 w-full rounded-lg border-border bg-card/60 font-medium text-foreground shadow-sm transition-colors hover:bg-accent/50 hover:text-foreground"
       >
         <GoogleIcon />
         Continue with Google

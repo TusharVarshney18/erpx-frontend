@@ -8,6 +8,7 @@ import {
   Scripts,
   useLocation,
   useNavigate,
+  type ErrorComponentProps,
 } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
 
@@ -24,7 +25,12 @@ import { AuthProvider, useAuth } from "@/lib/auth";
 import { useAccess } from "@/hooks/useAccess";
 import { getRouteAccess } from "@/lib/navigation-access";
 import { UpgradeDialog } from "@/components/billing/upgrade-dialog";
+import { UpgradeModalProvider } from "@/components/entitlements/UpgradeModalProvider";
+import { LockedModuleState } from "@/components/entitlements/LockedModuleState";
+import type { EntitlementModule } from "@/lib/entitlements";
 import { MfaStepUpDialog } from "@/components/auth/MfaStepUpDialog";
+import { MfaPromptDialog } from "@/components/auth/MfaPromptDialog";
+import { isMarketingPath } from "@/config/site";
 import { Loader2, ShieldAlert, Lock } from "lucide-react";
 
 function NotFoundComponent() {
@@ -49,12 +55,13 @@ function NotFoundComponent() {
   );
 }
 
-function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
-  console.error(error);
+function ErrorComponent({ error, reset }: ErrorComponentProps) {
+  const normalized = error instanceof Error ? error : new Error(String(error));
+  console.error(normalized);
   const router = useRouter();
   useEffect(() => {
-    reportLovableError(error, { boundary: "tanstack_root_error_component" });
-  }, [error]);
+    reportLovableError(normalized, { boundary: "tanstack_root_error_component" });
+  }, [normalized]);
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
@@ -136,28 +143,40 @@ function OrgSwitchListener({ queryClient }: { queryClient: QueryClient }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const location = useLocation();
+  // Marketing pages render their own public chrome; the app shell (sidebar,
+  // header, auth gate) is only mounted for authenticated application routes.
+  const isPublicMarketing = isMarketingPath(location.pathname);
+
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
+        <UpgradeModalProvider>
         <TooltipProvider delayDuration={150}>
           <OrgSwitchListener queryClient={queryClient} />
-          <AuthGate>
-            <SidebarProvider>
-              <div className="flex min-h-screen w-full bg-background">
-                <AppSidebar />
-                <SidebarInset className="min-w-0 flex-1">
-                  <TopHeader />
-                  <main className="min-w-0 flex-1 p-4 sm:p-6">
-                    <Outlet />
-                  </main>
-                </SidebarInset>
-              </div>
-              <AICopilot />
-            </SidebarProvider>
-          </AuthGate>
+          {isPublicMarketing ? (
+            <Outlet />
+          ) : (
+            <AuthGate>
+              <SidebarProvider>
+                <div className="flex min-h-screen w-full bg-background">
+                  <AppSidebar />
+                  <SidebarInset className="min-w-0 flex-1">
+                    <TopHeader />
+                    <main className="min-w-0 flex-1 p-4 sm:p-6">
+                      <Outlet />
+                    </main>
+                  </SidebarInset>
+                </div>
+                <AICopilot />
+              </SidebarProvider>
+            </AuthGate>
+          )}
           <Toaster richColors position="bottom-right" />
           <MfaStepUpDialog />
+          <MfaPromptDialog />
         </TooltipProvider>
+        </UpgradeModalProvider>
       </AuthProvider>
     </QueryClientProvider>
   );
@@ -232,7 +251,13 @@ function AuthGate({ children }: { children: ReactNode }) {
     return <RouteDenied />;
   }
   if (routeAccess.locked) {
-    return <RouteLocked plan={access.plan} />;
+    return (
+      <RouteLocked
+        module={routeAccess.module}
+        requiredPlan={routeAccess.requiredPlan}
+        plan={access.plan}
+      />
+    );
   }
 
   return <>{children}</>;
@@ -255,8 +280,21 @@ function RouteDenied() {
   );
 }
 
-function RouteLocked({ plan }: { plan: string | null }) {
+function RouteLocked({
+  module,
+  requiredPlan,
+  plan,
+}: {
+  module: string | null;
+  requiredPlan: string | null;
+  plan: string | null;
+}) {
   const [upgradeOpen, setUpgradeOpen] = useState(false);
+
+  if (module) {
+    return <LockedModuleState module={module as EntitlementModule} />;
+  }
+
   return (
     <div className="flex min-h-[60vh] items-center justify-center">
       <div className="max-w-md text-center">

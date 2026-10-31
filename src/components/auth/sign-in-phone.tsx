@@ -5,6 +5,7 @@ import { useCountdown } from "@/hooks/useCountdown";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { InlineError } from "@/components/auth/auth-extras";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { toast } from "sonner";
 import { ArrowLeft, Loader2, MessageSquareText, Phone, RefreshCw } from "lucide-react";
@@ -36,15 +37,17 @@ export function SignInPhonePanel({
   const [code, setCode] = useState("");
   const [sending, setSending] = useState(false);
   const [verifying, setVerifying] = useState(false);
+  const [error, setError] = useState("");
 
   const sendCode = async (showWait = true) => {
+    setError("");
     const trimmed = phone.trim();
     if (!/^\+?[1-9]\d{6,14}$/.test(trimmed)) {
-      toast.error("Enter a valid phone number in international format, e.g. +919876543210.");
+      setError("Enter a valid phone number in international format, e.g. +919876543210.");
       return;
     }
     if (secondsLeft > 0 && showWait) {
-      toast.error(`Please wait ${secondsLeft}s before requesting another code.`);
+      setError(`Please wait ${secondsLeft}s before requesting another code.`);
       return;
     }
     setSending(true);
@@ -64,7 +67,7 @@ export function SignInPhonePanel({
     } catch (err) {
       const match = String(err instanceof Error ? err.message : err).match(/(\d+)s/);
       if (match) start(Number(match[1]));
-      toast.error(errorMessage(err, "Could not send a code. Please try again."));
+      setError(errorMessage(err, "Could not send a code. Please try again."));
     } finally {
       setSending(false);
     }
@@ -72,6 +75,7 @@ export function SignInPhonePanel({
 
   const verify = async (value: string) => {
     if (value.length !== 6 || verifying) return;
+    setError("");
     setVerifying(true);
     try {
       const result = await verifyPhoneLoginCode(phone.trim(), value);
@@ -91,7 +95,7 @@ export function SignInPhonePanel({
       nav({ to: "/" });
     } catch (err) {
       setCode("");
-      toast.error(errorMessage(err, "Invalid or expired code. Please try again."));
+      setError(errorMessage(err, "Invalid or expired code. Please try again."));
     } finally {
       setVerifying(false);
     }
@@ -102,10 +106,12 @@ export function SignInPhonePanel({
     setSent(false);
     setCode("");
     setMaskedPhone(null);
+    setError("");
   };
 
   return (
     <div className="space-y-4">
+      <InlineError>{error}</InlineError>
       {!sent ? (
         <>
           <p className="text-sm leading-relaxed text-muted-foreground">

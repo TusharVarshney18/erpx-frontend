@@ -16,8 +16,9 @@ import {
  * bypasses demo restrictions via isSuperAdmin.
  */
 export function useFeatureAccess() {
-  const { activeOrganizationId, isSuperAdmin } = useAuth();
+  const { activeOrganizationId, isSuperAdmin, user } = useAuth();
   const orgId = activeOrganizationId;
+  const isOrgAdmin = user?.isOrgAdmin === true;
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["feature-access", orgId],
@@ -26,7 +27,7 @@ export function useFeatureAccess() {
     staleTime: 60_000,
   });
 
-  const ctx: FeatureAccessContext = buildFeatureContext(data, isSuperAdmin);
+  const ctx: FeatureAccessContext = buildFeatureContext(data, isSuperAdmin, isOrgAdmin);
 
   const status = (id: FeatureId): FeatureStatus => getFeatureStatus(id, ctx);
   const available = (id: FeatureId): boolean => isFeatureAvailable(id, ctx);

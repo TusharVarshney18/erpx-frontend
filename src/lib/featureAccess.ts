@@ -33,6 +33,8 @@ export type FeatureAccessContext = {
   isPremium: boolean;
   /** Platform Super Admin bypasses customer subscription gating. */
   isSuperAdmin: boolean;
+  /** Organization owners / admins bypass customer subscription gating. */
+  isOrgAdmin: boolean;
 };
 
 export type FeatureDefinition = {
@@ -75,7 +77,7 @@ export function getFeatureStatus(
   if (NOT_IMPLEMENTED.includes(id)) return "NOT_IMPLEMENTED";
   const def = featureById(id);
   if (!def) return "AVAILABLE";
-  if (ctx.isSuperAdmin) return "AVAILABLE";
+  if (ctx.isSuperAdmin || ctx.isOrgAdmin) return "AVAILABLE";
   if (def.premium && !ctx.isPremium) return "DEMO_RESTRICTED";
   return "AVAILABLE";
 }
@@ -88,9 +90,11 @@ export function isFeatureAvailable(id: FeatureId, ctx: FeatureAccessContext): bo
 export function buildFeatureContext(
   access: FeatureAccess | undefined,
   isSuperAdmin: boolean,
+  isOrgAdmin = false,
 ): FeatureAccessContext {
   return {
     isPremium: access?.isPremium === true,
     isSuperAdmin,
+    isOrgAdmin,
   };
 }
