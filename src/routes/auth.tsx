@@ -501,16 +501,57 @@ function AuthPage() {
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError("");
+
+    // Mirror the backend RegisterDto rules so people get a precise, readable
+    // message in the form instead of a generic "Validation failed" response.
+    const cleanEmail = email.trim();
+    const cleanFirstName = firstName.trim();
+    const cleanLastName = lastName.trim();
+    const cleanOrgName = orgName.trim();
+    const cleanOrgCode = orgCode.trim().toLowerCase();
+    const cleanPhone = phone.replace(/[\s().-]/g, "");
+
+    const problems: string[] = [];
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+      problems.push("Enter a valid email address, e.g. you@company.com.");
+    }
+    if (cleanFirstName.length < 1 || cleanFirstName.length > 100) {
+      problems.push("First name must be 1–100 characters.");
+    }
+    if (cleanLastName.length < 1 || cleanLastName.length > 100) {
+      problems.push("Last name must be 1–100 characters.");
+    }
+    if (cleanOrgName.length < 1 || cleanOrgName.length > 200) {
+      problems.push("Organization name must be 1–200 characters.");
+    }
+    if (!/^[a-z0-9-]{2,50}$/.test(cleanOrgCode)) {
+      problems.push(
+        "Organization code must be 2–50 characters using lowercase letters, numbers and hyphens only — e.g. acme-inc.",
+      );
+    }
+    if (password.length < 8 || password.length > 128) {
+      problems.push("Password must be 8–128 characters.");
+    }
+    if (cleanPhone && !/^\+?[1-9]\d{6,14}$/.test(cleanPhone)) {
+      problems.push(
+        "Phone must be in international format with country code, e.g. +919876543210 (7–15 digits).",
+      );
+    }
+    if (problems.length > 0) {
+      setAuthError(problems.join(" "));
+      return;
+    }
+
     setBusy(true);
     try {
       const result = await signUp({
-        email,
+        email: cleanEmail,
         password,
-        firstName,
-        lastName,
-        organizationName: orgName,
-        organizationCode: orgCode,
-        phone: phone.trim() || undefined,
+        firstName: cleanFirstName,
+        lastName: cleanLastName,
+        organizationName: cleanOrgName,
+        organizationCode: cleanOrgCode,
+        phone: cleanPhone || undefined,
       });
       if (result.requiresEmailVerification) {
         if (result.deliveredVia === "console") {
@@ -520,7 +561,7 @@ function AuthPage() {
         } else {
           toast.success("Account created. Check your inbox for a verification code.");
         }
-        nav({ to: "/verify-email", search: { email } });
+        nav({ to: "/verify-email", search: { email: cleanEmail } });
       } else {
         toast.success(
           requestedPlan
@@ -689,6 +730,8 @@ function AuthPage() {
                         placeholder="Jane"
                         className="h-11 rounded-lg"
                         disabled={busy}
+                        autoComplete="given-name"
+                        maxLength={100}
                         required
                       />
                     </div>
@@ -703,6 +746,8 @@ function AuthPage() {
                         placeholder="Doe"
                         className="h-11 rounded-lg"
                         disabled={busy}
+                        autoComplete="family-name"
+                        maxLength={100}
                         required
                       />
                     </div>
@@ -718,6 +763,8 @@ function AuthPage() {
                       placeholder="Acme Inc"
                       className="h-11 rounded-lg"
                       disabled={busy}
+                      autoComplete="organization"
+                      maxLength={200}
                       required
                     />
                   </div>
@@ -728,14 +775,23 @@ function AuthPage() {
                     <Input
                       id="orgCode"
                       value={orgCode}
-                      onChange={(e) => setOrgCode(e.target.value)}
+                      onChange={(e) =>
+                        setOrgCode(e.target.value.toLowerCase().replace(/[^a-z0-9-]+/g, "-"))
+                      }
                       placeholder="acme-inc"
-                      pattern="^[a-z0-9-]+$"
-                      title="Lowercase letters, numbers, and hyphens only"
+                      pattern="^[a-z0-9-]{2,50}$"
+                      title="2–50 lowercase letters, numbers, and hyphens only"
                       className="h-11 rounded-lg"
                       disabled={busy}
+                      minLength={2}
+                      maxLength={50}
                       required
                     />
+                    <p className="text-[11px] leading-relaxed text-muted-foreground">
+                      Lowercase letters, numbers and hyphens only (2–50 characters), e.g.{" "}
+                      <span className="font-medium text-foreground">acme-inc</span>. This is your
+                      workspace&apos;s unique code.
+                    </p>
                   </div>
                   <div className="space-y-1.5">
                     <Label htmlFor="signupPhone" className="text-[13px]">
@@ -756,6 +812,11 @@ function AuthPage() {
                         disabled={busy}
                       />
                     </div>
+                    <p className="text-[11px] leading-relaxed text-muted-foreground">
+                      Include your country code, e.g.{" "}
+                      <span className="font-medium text-foreground">+919876543210</span>. Spaces and
+                      dashes are ignored.
+                    </p>
                   </div>
                 </TabsContent>
 
@@ -771,10 +832,12 @@ function AuthPage() {
                         type="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
+                        onBlur={() => setEmail((current) => current.trim())}
                         placeholder="you@company.com"
                         autoComplete="email"
                         className="h-11 rounded-lg pl-10"
                         disabled={busy}
+                        maxLength={254}
                         required
                       />
                     </div>
@@ -799,6 +862,7 @@ function AuthPage() {
                         disabled={busy}
                         required
                         minLength={8}
+                        maxLength={128}
                       />
                       <button
                         type="button"

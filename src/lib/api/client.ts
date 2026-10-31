@@ -1,4 +1,25 @@
-export const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3001/api/v1";
+// VITE_* values are baked into the bundle at build time. If none is set, only
+// a browser actually running on localhost should talk to the local backend on
+// port 3001; every other host uses the same-origin /api/v1 path.
+const fallbackApiBase =
+  typeof window !== "undefined" &&
+  (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
+    ? "http://localhost:3001/api/v1"
+    : "/api/v1";
+
+/**
+ * Accept either a full API base (`https://api.example.com/api/v1`) or a bare
+ * origin (`https://api.example.com`) from the deployment environment. A bare
+ * origin is a common misconfiguration and previously produced broken links
+ * such as `/auth/google` instead of `/api/v1/auth/google`.
+ */
+function normalizeApiBase(value: string): string {
+  const trimmed = value.replace(/\/+$/, "");
+  if (!trimmed) return "/api/v1";
+  return /\/api(?:\/v\d+)?$/.test(trimmed) ? trimmed : `${trimmed}/api/v1`;
+}
+
+export const API_BASE = normalizeApiBase(import.meta.env.VITE_API_URL || fallbackApiBase);
 
 const isBrowser = typeof window !== "undefined";
 
@@ -15,7 +36,10 @@ async function fetchWithTimeout(input: string, init: RequestInit = {}): Promise<
     if (error instanceof DOMException && error.name === "AbortError") {
       throw new Error("The server took too long to respond. Please try again.");
     }
-    throw error;
+    const reason = error instanceof Error && error.message ? ` (${error.message})` : "";
+    throw new Error(
+      `Cannot reach the API server at ${API_BASE}${reason}. Check that the backend is running and that VITE_API_URL points to it.`,
+    );
   } finally {
     clearTimeout(timeout);
   }
@@ -201,6 +225,7 @@ async function request<T>(
       module?: string;
       requiredPlan?: string | null;
       message?: string;
+      errors?: unknown;
     };
     if (errorBody?.code === "FEATURE_LOCKED" && isBrowser) {
       window.dispatchEvent(
@@ -213,14 +238,26 @@ async function request<T>(
         }),
       );
     }
-    const err = new Error(
+    // Validation failures arrive as { message: "Validation failed", errors: [...] }.
+    // Surface the individual field errors so the user knows what to fix instead of
+    // only seeing the generic "Validation failed" headline.
+    const validationErrors = Array.isArray(errorBody?.errors)
+      ? errorBody.errors.filter(
+          (item): item is string => typeof item === "string" && item.trim() !== "",
+        )
+      : [];
+    const message =
       (body && typeof body === "object" && "message" in body
         ? (body as { message?: string }).message
-        : null) || `HTTP ${res.status}`,
-    ) as Error & { status?: number; data?: unknown; code?: string };
+        : null) || `HTTP ${res.status}`;
+    const headline = message === "Validation failed" ? "Please fix the following:" : message;
+    const err = new Error(
+      validationErrors.length > 0 ? `${headline} ${validationErrors.join(" ")}` : message,
+    ) as Error & { status?: number; data?: unknown; code?: string; errors?: string[] };
     err.status = res.status;
     err.data = body;
     err.code = errorBody?.code;
+    err.errors = validationErrors;
     throw err;
   }
 

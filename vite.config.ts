@@ -7,8 +7,9 @@
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
 export default defineConfig({
-  // Deploy target: Vercel (Nitro Build Output API -> .vercel/output).
-  nitro: { preset: "vercel" },
+  // Deploy target defaults to Vercel, but Docker/self-hosting builds set
+  // NITRO_PRESET=node-server and must produce .output (not .vercel/output).
+  nitro: { preset: process.env.NITRO_PRESET || "vercel" },
   tanstackStart: {
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
     // nitro/vite builds from this

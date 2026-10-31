@@ -1,6 +1,4 @@
-import { getAccessToken, setTokens } from "./client";
-
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3001/api/v1";
+import { API_BASE, getAccessToken, setTokens } from "./client";
 
 export type BankAccountType = "SAVINGS" | "CURRENT" | "CASH" | "LOAN" | "OTHER";
 export type BankTransactionType = "CREDIT" | "DEBIT" | "TRANSFER";
