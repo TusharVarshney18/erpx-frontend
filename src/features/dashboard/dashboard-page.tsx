@@ -26,6 +26,8 @@ import {
   Users,
   Building2,
   ArrowUpRight,
+  Clock,
+  CalendarDays,
   type LucideIcon,
 } from "lucide-react";
 import { useAccess } from "@/hooks/useAccess";
@@ -552,9 +554,23 @@ function EmptyDashboard() {
     <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-border bg-card px-6 py-16 text-center">
       <div className="text-base font-semibold">Welcome to ERPX</div>
       <p className="max-w-md text-sm text-muted-foreground">
-        Your account has access to the dashboard. Widgets will appear as your permissions grant
-        access to each module.
+        Mark your attendance and manage your leave below. Company modules appear here once your
+        admin gives your account a role with access to them.
       </p>
+      <div className="mt-2 flex flex-wrap justify-center gap-2">
+        <Link
+          to="/hrms/my-attendance"
+          className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+        >
+          <Clock className="h-4 w-4" /> Check in / My Attendance
+        </Link>
+        <Link
+          to="/hrms/my-leave"
+          className="inline-flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted"
+        >
+          <CalendarDays className="h-4 w-4" /> My Leave
+        </Link>
+      </div>
     </div>
   );
 }

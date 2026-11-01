@@ -147,6 +147,7 @@ const createItems = (): NavGroup[] => [
           { title: "My Attendance", url: "/hrms/my-attendance" },
           { title: "My Leave", url: "/hrms/my-leave" },
           { title: "Employees", url: "/hrms/employees", permission: "employee:read" },
+          { title: "Designations", url: "/hrms/designations", permission: "designation:read" },
           { title: "Attendance", url: "/hrms/attendance", permission: "attendance:read" },
           { title: "Leaves", url: "/hrms/leaves", permission: "leave:read" },
           { title: "Payroll", url: "/hrms/payroll", permission: "payroll:read", moduleKey: "payroll" },
