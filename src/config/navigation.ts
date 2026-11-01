@@ -144,6 +144,8 @@ const createItems = (): NavGroup[] => [
         icon: Briefcase,
         moduleKey: "hrms",
         children: [
+          { title: "My Attendance", url: "/hrms/my-attendance" },
+          { title: "My Leave", url: "/hrms/my-leave" },
           { title: "Employees", url: "/hrms/employees", permission: "employee:read" },
           { title: "Attendance", url: "/hrms/attendance", permission: "attendance:read" },
           { title: "Leaves", url: "/hrms/leaves", permission: "leave:read" },
