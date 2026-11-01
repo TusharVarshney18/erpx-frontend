@@ -51,6 +51,7 @@ import { Route as CrmActivitiesRouteImport } from './routes/crm.activities'
 import { Route as CrmLeadsRouteImport } from './routes/crm.leads'
 import { Route as CrmOpportunitiesRouteImport } from './routes/crm.opportunities'
 import { Route as HrmsAttendanceRouteImport } from './routes/hrms.attendance'
+import { Route as HrmsDesignationsRouteImport } from './routes/hrms.designations'
 import { Route as HrmsEmployeesRouteImport } from './routes/hrms.employees'
 import { Route as HrmsLeavesRouteImport } from './routes/hrms.leaves'
 import { Route as HrmsMyAttendanceRouteImport } from './routes/hrms.my-attendance'
@@ -305,6 +306,11 @@ const CrmOpportunitiesRoute = CrmOpportunitiesRouteImport.update({
 const HrmsAttendanceRoute = HrmsAttendanceRouteImport.update({
   id: '/hrms/attendance',
   path: '/hrms/attendance',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HrmsDesignationsRoute = HrmsDesignationsRouteImport.update({
+  id: '/hrms/designations',
+  path: '/hrms/designations',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HrmsEmployeesRoute = HrmsEmployeesRouteImport.update({
@@ -566,6 +572,7 @@ export interface FileRoutesByFullPath {
   '/crm/leads': typeof CrmLeadsRoute
   '/crm/opportunities': typeof CrmOpportunitiesRoute
   '/hrms/attendance': typeof HrmsAttendanceRoute
+  '/hrms/designations': typeof HrmsDesignationsRoute
   '/hrms/employees': typeof HrmsEmployeesRoute
   '/hrms/leaves': typeof HrmsLeavesRoute
   '/hrms/my-attendance': typeof HrmsMyAttendanceRoute
@@ -653,6 +660,7 @@ export interface FileRoutesByTo {
   '/crm/leads': typeof CrmLeadsRoute
   '/crm/opportunities': typeof CrmOpportunitiesRoute
   '/hrms/attendance': typeof HrmsAttendanceRoute
+  '/hrms/designations': typeof HrmsDesignationsRoute
   '/hrms/employees': typeof HrmsEmployeesRoute
   '/hrms/leaves': typeof HrmsLeavesRoute
   '/hrms/my-attendance': typeof HrmsMyAttendanceRoute
@@ -741,6 +749,7 @@ export interface FileRoutesById {
   '/crm/leads': typeof CrmLeadsRoute
   '/crm/opportunities': typeof CrmOpportunitiesRoute
   '/hrms/attendance': typeof HrmsAttendanceRoute
+  '/hrms/designations': typeof HrmsDesignationsRoute
   '/hrms/employees': typeof HrmsEmployeesRoute
   '/hrms/leaves': typeof HrmsLeavesRoute
   '/hrms/my-attendance': typeof HrmsMyAttendanceRoute
@@ -830,6 +839,7 @@ export interface FileRouteTypes {
     | '/crm/leads'
     | '/crm/opportunities'
     | '/hrms/attendance'
+    | '/hrms/designations'
     | '/hrms/employees'
     | '/hrms/leaves'
     | '/hrms/my-attendance'
@@ -917,6 +927,7 @@ export interface FileRouteTypes {
     | '/crm/leads'
     | '/crm/opportunities'
     | '/hrms/attendance'
+    | '/hrms/designations'
     | '/hrms/employees'
     | '/hrms/leaves'
     | '/hrms/my-attendance'
@@ -1004,6 +1015,7 @@ export interface FileRouteTypes {
     | '/crm/leads'
     | '/crm/opportunities'
     | '/hrms/attendance'
+    | '/hrms/designations'
     | '/hrms/employees'
     | '/hrms/leaves'
     | '/hrms/my-attendance'
@@ -1092,6 +1104,7 @@ export interface RootRouteChildren {
   CrmLeadsRoute: typeof CrmLeadsRoute
   CrmOpportunitiesRoute: typeof CrmOpportunitiesRoute
   HrmsAttendanceRoute: typeof HrmsAttendanceRoute
+  HrmsDesignationsRoute: typeof HrmsDesignationsRoute
   HrmsEmployeesRoute: typeof HrmsEmployeesRoute
   HrmsLeavesRoute: typeof HrmsLeavesRoute
   HrmsMyAttendanceRoute: typeof HrmsMyAttendanceRoute
@@ -1431,6 +1444,13 @@ declare module '@tanstack/react-router' {
       path: '/hrms/attendance'
       fullPath: '/hrms/attendance'
       preLoaderRoute: typeof HrmsAttendanceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/hrms/designations': {
+      id: '/hrms/designations'
+      path: '/hrms/designations'
+      fullPath: '/hrms/designations'
+      preLoaderRoute: typeof HrmsDesignationsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/hrms/employees': {
@@ -1780,6 +1800,7 @@ const rootRouteChildren: RootRouteChildren = {
   CrmLeadsRoute: CrmLeadsRoute,
   CrmOpportunitiesRoute: CrmOpportunitiesRoute,
   HrmsAttendanceRoute: HrmsAttendanceRoute,
+  HrmsDesignationsRoute: HrmsDesignationsRoute,
   HrmsEmployeesRoute: HrmsEmployeesRoute,
   HrmsLeavesRoute: HrmsLeavesRoute,
   HrmsMyAttendanceRoute: HrmsMyAttendanceRoute,
