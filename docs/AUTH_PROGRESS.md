@@ -43,6 +43,6 @@
 
 ## Rules
 - Local database only.
-- Never run `prisma migrate dev` on Render.
+- Never run `prisma migrate dev` against the production (Vercel / Neon) database — production uses `prisma migrate deploy` during the Vercel build.
 - No push to any remote without explicit approval.
 - Backend migrations and deploy must happen BEFORE the frontend deploy.
