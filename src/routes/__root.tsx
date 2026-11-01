@@ -96,15 +96,22 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Acme ERP — Enterprise Suite" },
+      { title: "ERPX — Business Management Platform" },
       {
         name: "description",
         content:
           "Modern, enterprise-grade ERP for accounting, sales, inventory, CRM, HR and analytics.",
       },
+      // App and auth screens are private; marketing routes override this via seoHead().
+      { name: "robots", content: "noindex, nofollow" },
+      { name: "theme-color", content: "#050913" },
+      { name: "application-name", content: "ERPX" },
+      { name: "apple-mobile-web-app-title", content: "ERPX" },
+      { name: "format-detection", content: "telephone=no" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
+      { rel: "manifest", href: "/site.webmanifest" },
       { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
       { rel: "icon", type: "image/x-icon", href: "/favicon.ico" },
       { rel: "apple-touch-icon", sizes: "180x180", href: "/apple-touch-icon.png" },

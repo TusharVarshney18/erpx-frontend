@@ -12,16 +12,17 @@ import {
   SectionHeading,
 } from "@/components/marketing/primitives";
 import { PRODUCT_SECTIONS } from "@/config/marketing";
-import { seoHead } from "@/config/site";
+import { breadcrumbJsonLd, seoHead, softwareApplicationJsonLd } from "@/config/site";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/product")({
   head: () =>
     seoHead({
-      title: "Product — ERPX",
+      title: "ERP Modules: Accounting, Billing, Inventory & HRMS | ERPX",
       description:
         "Explore ERPX modules for accounting, sales and billing, inventory, CRM and HRMS. See what is available today and what is on the roadmap.",
       path: "/product",
+      jsonLd: [softwareApplicationJsonLd(), breadcrumbJsonLd("Product", "/product")],
     }),
   component: ProductPage,
 });
@@ -110,6 +111,17 @@ function ProductPage() {
                         </li>
                       ))}
                     </ul>
+                  </Reveal>
+
+                  <Reveal>
+                    <Link
+                      to="/solutions/$slug"
+                      params={{ slug: section.solutionSlug }}
+                      className="mt-6 inline-flex items-center gap-1.5 text-sm font-medium text-sky-300 hover:text-sky-200"
+                    >
+                      Learn more about {section.eyebrow}
+                      <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                    </Link>
                   </Reveal>
 
                   {section.comingSoon.length > 0 ? (

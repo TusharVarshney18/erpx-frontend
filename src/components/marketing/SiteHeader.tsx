@@ -8,6 +8,7 @@ import { Logo } from "./Logo";
 
 const NAV_LINKS = [
   { to: "/product", label: "Product" },
+  { to: "/solutions", label: "Solutions" },
   { to: "/pricing", label: "Pricing" },
 ] as const;
 
@@ -46,7 +47,8 @@ export function SiteHeader() {
 
         <nav aria-label="Main" className="hidden items-center gap-1 lg:flex">
           {NAV_LINKS.map((item) => {
-            const active = location.pathname === item.to;
+            const active =
+              location.pathname === item.to || location.pathname.startsWith(`${item.to}/`);
             return (
               <Link
                 key={item.to}

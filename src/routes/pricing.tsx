@@ -3,6 +3,7 @@ import { ArrowRight, Check, Minus, Sparkles } from "lucide-react";
 import { Fragment, useState } from "react";
 
 import { CtaBand } from "@/components/marketing/CtaBand";
+import { FaqList } from "@/components/marketing/FaqList";
 import { MarketingLayout } from "@/components/marketing/MarketingLayout";
 import {
   Container,
@@ -11,12 +12,6 @@ import {
   Section,
   SectionHeading,
 } from "@/components/marketing/primitives";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
 import {
   COMPARISON_GROUPS,
   GST_NOTE,
@@ -27,16 +22,26 @@ import {
   planSelectionValue,
   type PricingPlan,
 } from "@/config/plans";
-import { seoHead } from "@/config/site";
+import { breadcrumbJsonLd, faqJsonLd, seoHead, softwareApplicationJsonLd } from "@/config/site";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/pricing")({
   head: () =>
     seoHead({
-      title: "Pricing — ERPX",
+      title: "ERPX Pricing — ERP Plans in INR, Free to Enterprise",
       description:
         "Simple INR pricing for ERPX. Compare Free, Starter, Pro and Enterprise plans, billed monthly or yearly. Prices exclude GST.",
       path: "/pricing",
+      jsonLd: [
+        softwareApplicationJsonLd(
+          PLANS.filter((plan) => plan.monthlyInr !== null).map((plan) => ({
+            name: plan.name,
+            price: plan.monthlyInr as number,
+          })),
+        ),
+        faqJsonLd(PRICING_FAQS),
+        breadcrumbJsonLd("Pricing", "/pricing"),
+      ],
     }),
   component: PricingPage,
 });
@@ -135,22 +140,7 @@ function PricingPage() {
           />
           <Reveal>
             <div className="mx-auto mt-10 max-w-3xl">
-              <Accordion type="single" collapsible className="w-full">
-                {PRICING_FAQS.map((faq, index) => (
-                  <AccordionItem
-                    key={faq.question}
-                    value={`faq-${index}`}
-                    className="border-white/10"
-                  >
-                    <AccordionTrigger className="py-5 text-left text-[15px] font-medium text-white hover:no-underline [&>svg]:text-white/40">
-                      {faq.question}
-                    </AccordionTrigger>
-                    <AccordionContent className="pb-5 text-sm leading-relaxed text-white/60">
-                      {faq.answer}
-                    </AccordionContent>
-                  </AccordionItem>
-                ))}
-              </Accordion>
+              <FaqList faqs={PRICING_FAQS} />
             </div>
           </Reveal>
         </Container>

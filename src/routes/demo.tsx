@@ -13,7 +13,7 @@ import {
   Section,
 } from "@/components/marketing/primitives";
 import { TEAM_SIZES } from "@/config/marketing";
-import { seoHead } from "@/config/site";
+import { breadcrumbJsonLd, seoHead } from "@/config/site";
 import { submitDemoRequest } from "@/lib/api/demo.functions";
 import { demoFormSchema, type DemoFormValues } from "@/lib/demo-schema";
 import { cn } from "@/lib/utils";
@@ -21,10 +21,11 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/demo")({
   head: () =>
     seoHead({
-      title: "Book a demo — ERPX",
+      title: "Book an ERPX Demo — 30-Minute ERP Walkthrough",
       description:
         "See ERPX on your own workflows. Book a 30-minute walkthrough of accounting, sales, inventory, CRM and HR with our team.",
       path: "/demo",
+      jsonLd: [breadcrumbJsonLd("Book a demo", "/demo")],
     }),
   component: DemoPage,
 });

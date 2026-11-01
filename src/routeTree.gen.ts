@@ -19,6 +19,8 @@ import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as ProductRouteImport } from './routes/product'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as VerifyEmailRouteImport } from './routes/verify-email'
 import { Route as AccountingAccountGroupsRouteImport } from './routes/accounting.account-groups'
 import { Route as AccountingBalanceSheetRouteImport } from './routes/accounting.balance-sheet'
@@ -75,6 +77,8 @@ import { Route as SalesQuotationsRouteImport } from './routes/sales.quotations'
 import { Route as SalesSalesOrdersRouteImport } from './routes/sales.sales-orders'
 import { Route as SecurityMfaRouteImport } from './routes/security.mfa'
 import { Route as SecuritySessionsRouteImport } from './routes/security.sessions'
+import { Route as SolutionsIndexRouteImport } from './routes/solutions.index'
+import { Route as SolutionsSlugRouteImport } from './routes/solutions.$slug'
 import { Route as SuperAdminAnnouncementsRouteImport } from './routes/super-admin.announcements'
 import { Route as SuperAdminAuditLogsRouteImport } from './routes/super-admin.audit-logs'
 import { Route as SuperAdminCouponsRouteImport } from './routes/super-admin.coupons'
@@ -137,6 +141,16 @@ const ProductRoute = ProductRouteImport.update({
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RobotsDottxtRoute = RobotsDottxtRouteImport.update({
+  id: '/robots.txt',
+  path: '/robots.txt',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
   getParentRoute: () => rootRouteImport,
 } as any)
 const VerifyEmailRoute = VerifyEmailRouteImport.update({
@@ -421,6 +435,16 @@ const SecuritySessionsRoute = SecuritySessionsRouteImport.update({
   path: '/security/sessions',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SolutionsIndexRoute = SolutionsIndexRouteImport.update({
+  id: '/solutions/',
+  path: '/solutions/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SolutionsSlugRoute = SolutionsSlugRouteImport.update({
+  id: '/solutions/$slug',
+  path: '/solutions/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SuperAdminAnnouncementsRoute = SuperAdminAnnouncementsRouteImport.update({
   id: '/super-admin/announcements',
   path: '/super-admin/announcements',
@@ -498,6 +522,8 @@ export interface FileRoutesByFullPath {
   '/pricing': typeof PricingRoute
   '/product': typeof ProductRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/robots.txt': typeof RobotsDottxtRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/verify-email': typeof VerifyEmailRoute
   '/accounting/account-groups': typeof AccountingAccountGroupsRoute
   '/accounting/balance-sheet': typeof AccountingBalanceSheetRoute
@@ -554,6 +580,7 @@ export interface FileRoutesByFullPath {
   '/sales/sales-orders': typeof SalesSalesOrdersRoute
   '/security/mfa': typeof SecurityMfaRoute
   '/security/sessions': typeof SecuritySessionsRoute
+  '/solutions/$slug': typeof SolutionsSlugRoute
   '/super-admin/announcements': typeof SuperAdminAnnouncementsRoute
   '/super-admin/audit-logs': typeof SuperAdminAuditLogsRoute
   '/super-admin/coupons': typeof SuperAdminCouponsRoute
@@ -567,6 +594,7 @@ export interface FileRoutesByFullPath {
   '/super-admin/subscriptions': typeof SuperAdminSubscriptionsRoute
   '/super-admin/system-health': typeof SuperAdminSystemHealthRoute
   '/super-admin/users': typeof SuperAdminUsersRoute
+  '/solutions/': typeof SolutionsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -579,6 +607,8 @@ export interface FileRoutesByTo {
   '/pricing': typeof PricingRoute
   '/product': typeof ProductRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/robots.txt': typeof RobotsDottxtRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/verify-email': typeof VerifyEmailRoute
   '/accounting/account-groups': typeof AccountingAccountGroupsRoute
   '/accounting/balance-sheet': typeof AccountingBalanceSheetRoute
@@ -635,6 +665,7 @@ export interface FileRoutesByTo {
   '/sales/sales-orders': typeof SalesSalesOrdersRoute
   '/security/mfa': typeof SecurityMfaRoute
   '/security/sessions': typeof SecuritySessionsRoute
+  '/solutions/$slug': typeof SolutionsSlugRoute
   '/super-admin/announcements': typeof SuperAdminAnnouncementsRoute
   '/super-admin/audit-logs': typeof SuperAdminAuditLogsRoute
   '/super-admin/coupons': typeof SuperAdminCouponsRoute
@@ -648,6 +679,7 @@ export interface FileRoutesByTo {
   '/super-admin/subscriptions': typeof SuperAdminSubscriptionsRoute
   '/super-admin/system-health': typeof SuperAdminSystemHealthRoute
   '/super-admin/users': typeof SuperAdminUsersRoute
+  '/solutions': typeof SolutionsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -661,6 +693,8 @@ export interface FileRoutesById {
   '/pricing': typeof PricingRoute
   '/product': typeof ProductRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/robots.txt': typeof RobotsDottxtRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/verify-email': typeof VerifyEmailRoute
   '/accounting/account-groups': typeof AccountingAccountGroupsRoute
   '/accounting/balance-sheet': typeof AccountingBalanceSheetRoute
@@ -717,6 +751,7 @@ export interface FileRoutesById {
   '/sales/sales-orders': typeof SalesSalesOrdersRoute
   '/security/mfa': typeof SecurityMfaRoute
   '/security/sessions': typeof SecuritySessionsRoute
+  '/solutions/$slug': typeof SolutionsSlugRoute
   '/super-admin/announcements': typeof SuperAdminAnnouncementsRoute
   '/super-admin/audit-logs': typeof SuperAdminAuditLogsRoute
   '/super-admin/coupons': typeof SuperAdminCouponsRoute
@@ -730,6 +765,7 @@ export interface FileRoutesById {
   '/super-admin/subscriptions': typeof SuperAdminSubscriptionsRoute
   '/super-admin/system-health': typeof SuperAdminSystemHealthRoute
   '/super-admin/users': typeof SuperAdminUsersRoute
+  '/solutions/': typeof SolutionsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -744,6 +780,8 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/product'
     | '/reset-password'
+    | '/robots.txt'
+    | '/sitemap.xml'
     | '/verify-email'
     | '/accounting/account-groups'
     | '/accounting/balance-sheet'
@@ -800,6 +838,7 @@ export interface FileRouteTypes {
     | '/sales/sales-orders'
     | '/security/mfa'
     | '/security/sessions'
+    | '/solutions/$slug'
     | '/super-admin/announcements'
     | '/super-admin/audit-logs'
     | '/super-admin/coupons'
@@ -813,6 +852,7 @@ export interface FileRouteTypes {
     | '/super-admin/subscriptions'
     | '/super-admin/system-health'
     | '/super-admin/users'
+    | '/solutions/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -825,6 +865,8 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/product'
     | '/reset-password'
+    | '/robots.txt'
+    | '/sitemap.xml'
     | '/verify-email'
     | '/accounting/account-groups'
     | '/accounting/balance-sheet'
@@ -881,6 +923,7 @@ export interface FileRouteTypes {
     | '/sales/sales-orders'
     | '/security/mfa'
     | '/security/sessions'
+    | '/solutions/$slug'
     | '/super-admin/announcements'
     | '/super-admin/audit-logs'
     | '/super-admin/coupons'
@@ -894,6 +937,7 @@ export interface FileRouteTypes {
     | '/super-admin/subscriptions'
     | '/super-admin/system-health'
     | '/super-admin/users'
+    | '/solutions'
   id:
     | '__root__'
     | '/'
@@ -906,6 +950,8 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/product'
     | '/reset-password'
+    | '/robots.txt'
+    | '/sitemap.xml'
     | '/verify-email'
     | '/accounting/account-groups'
     | '/accounting/balance-sheet'
@@ -962,6 +1008,7 @@ export interface FileRouteTypes {
     | '/sales/sales-orders'
     | '/security/mfa'
     | '/security/sessions'
+    | '/solutions/$slug'
     | '/super-admin/announcements'
     | '/super-admin/audit-logs'
     | '/super-admin/coupons'
@@ -975,6 +1022,7 @@ export interface FileRouteTypes {
     | '/super-admin/subscriptions'
     | '/super-admin/system-health'
     | '/super-admin/users'
+    | '/solutions/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -988,6 +1036,8 @@ export interface RootRouteChildren {
   PricingRoute: typeof PricingRoute
   ProductRoute: typeof ProductRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  RobotsDottxtRoute: typeof RobotsDottxtRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   VerifyEmailRoute: typeof VerifyEmailRoute
   AccountingAccountGroupsRoute: typeof AccountingAccountGroupsRoute
   AccountingBalanceSheetRoute: typeof AccountingBalanceSheetRoute
@@ -1044,6 +1094,7 @@ export interface RootRouteChildren {
   SalesSalesOrdersRoute: typeof SalesSalesOrdersRoute
   SecurityMfaRoute: typeof SecurityMfaRoute
   SecuritySessionsRoute: typeof SecuritySessionsRoute
+  SolutionsSlugRoute: typeof SolutionsSlugRoute
   SuperAdminAnnouncementsRoute: typeof SuperAdminAnnouncementsRoute
   SuperAdminAuditLogsRoute: typeof SuperAdminAuditLogsRoute
   SuperAdminCouponsRoute: typeof SuperAdminCouponsRoute
@@ -1057,6 +1108,7 @@ export interface RootRouteChildren {
   SuperAdminSubscriptionsRoute: typeof SuperAdminSubscriptionsRoute
   SuperAdminSystemHealthRoute: typeof SuperAdminSystemHealthRoute
   SuperAdminUsersRoute: typeof SuperAdminUsersRoute
+  SolutionsIndexRoute: typeof SolutionsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -1129,6 +1181,20 @@ declare module '@tanstack/react-router' {
       path: '/reset-password'
       fullPath: '/reset-password'
       preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/robots.txt': {
+      id: '/robots.txt'
+      path: '/robots.txt'
+      fullPath: '/robots.txt'
+      preLoaderRoute: typeof RobotsDottxtRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/verify-email': {
@@ -1523,6 +1589,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SecuritySessionsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/solutions/': {
+      id: '/solutions/'
+      path: '/solutions'
+      fullPath: '/solutions/'
+      preLoaderRoute: typeof SolutionsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/solutions/$slug': {
+      id: '/solutions/$slug'
+      path: '/solutions/$slug'
+      fullPath: '/solutions/$slug'
+      preLoaderRoute: typeof SolutionsSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/super-admin/announcements': {
       id: '/super-admin/announcements'
       path: '/super-admin/announcements'
@@ -1628,6 +1708,8 @@ const rootRouteChildren: RootRouteChildren = {
   PricingRoute: PricingRoute,
   ProductRoute: ProductRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  RobotsDottxtRoute: RobotsDottxtRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
   VerifyEmailRoute: VerifyEmailRoute,
   AccountingAccountGroupsRoute: AccountingAccountGroupsRoute,
   AccountingBalanceSheetRoute: AccountingBalanceSheetRoute,
@@ -1684,6 +1766,7 @@ const rootRouteChildren: RootRouteChildren = {
   SalesSalesOrdersRoute: SalesSalesOrdersRoute,
   SecurityMfaRoute: SecurityMfaRoute,
   SecuritySessionsRoute: SecuritySessionsRoute,
+  SolutionsSlugRoute: SolutionsSlugRoute,
   SuperAdminAnnouncementsRoute: SuperAdminAnnouncementsRoute,
   SuperAdminAuditLogsRoute: SuperAdminAuditLogsRoute,
   SuperAdminCouponsRoute: SuperAdminCouponsRoute,
@@ -1697,6 +1780,7 @@ const rootRouteChildren: RootRouteChildren = {
   SuperAdminSubscriptionsRoute: SuperAdminSubscriptionsRoute,
   SuperAdminSystemHealthRoute: SuperAdminSystemHealthRoute,
   SuperAdminUsersRoute: SuperAdminUsersRoute,
+  SolutionsIndexRoute: SolutionsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

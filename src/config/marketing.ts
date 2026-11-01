@@ -166,6 +166,8 @@ export const STEPS: Step[] = [
 
 export type ProductSection = {
   id: string;
+  /** Slug of the matching `/solutions/*` page. */
+  solutionSlug: string;
   eyebrow: string;
   title: string;
   description: string;
@@ -179,6 +181,7 @@ export type ProductSection = {
 export const PRODUCT_SECTIONS: ProductSection[] = [
   {
     id: "accounting",
+    solutionSlug: "accounting-software",
     eyebrow: "Accounting",
     title: "Books that stay closed, and still add up",
     description:
@@ -204,6 +207,7 @@ export const PRODUCT_SECTIONS: ProductSection[] = [
   },
   {
     id: "sales",
+    solutionSlug: "gst-billing-software",
     eyebrow: "Sales & Billing",
     title: "From quote to cash, without re-typing",
     description:
@@ -224,6 +228,7 @@ export const PRODUCT_SECTIONS: ProductSection[] = [
   },
   {
     id: "inventory",
+    solutionSlug: "inventory-management-software",
     eyebrow: "Inventory",
     title: "Know what you have, everywhere",
     description:
@@ -249,6 +254,7 @@ export const PRODUCT_SECTIONS: ProductSection[] = [
   },
   {
     id: "crm",
+    solutionSlug: "crm-software",
     eyebrow: "CRM & People",
     title: "One pipeline for customers and teammates",
     description:
@@ -268,6 +274,7 @@ export const PRODUCT_SECTIONS: ProductSection[] = [
   },
   {
     id: "hrms",
+    solutionSlug: "hrms-software",
     eyebrow: "HRMS",
     title: "People operations, connected to the books",
     description:

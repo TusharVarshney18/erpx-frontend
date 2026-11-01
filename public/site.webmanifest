@@ -1,0 +1,13 @@
+{
+  "name": "ERPX",
+  "short_name": "ERPX",
+  "description": "Run accounting, sales, inventory, CRM and HR on one GST-ready platform.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#050913",
+  "theme_color": "#050913",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}

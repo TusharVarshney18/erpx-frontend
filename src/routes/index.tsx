@@ -22,16 +22,17 @@ import {
   SectionHeading,
 } from "@/components/marketing/primitives";
 import { MODULES, STEPS, TRUST_POINTS } from "@/config/marketing";
-import { seoHead } from "@/config/site";
+import { organizationJsonLd, seoHead, softwareApplicationJsonLd } from "@/config/site";
 import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/")({
   head: () =>
     seoHead({
-      title: "ERPX — Run your entire business on one platform",
+      title: "ERPX — GST-Ready ERP for Accounting, Inventory, CRM & HR",
       description:
         "Accounting, sales, inventory, CRM and HR in one GST-ready workspace with role-based access, per-company isolation and an audit trail on every entry.",
       path: "/",
+      jsonLd: [organizationJsonLd(), softwareApplicationJsonLd()],
     }),
   component: LandingPage,
 });

@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 
-import { MODULES } from "@/config/marketing";
+import { SOLUTIONS } from "@/config/solutions";
 import { useAuth } from "@/lib/auth";
 import { Logo } from "./Logo";
 
@@ -57,17 +57,17 @@ export function SiteFooter() {
 
           <div>
             <h2 className="text-xs font-semibold uppercase tracking-[0.16em] text-white/45">
-              Modules
+              Solutions
             </h2>
             <ul className="mt-4 space-y-2.5">
-              {MODULES.map((module) => (
-                <li key={module.id}>
+              {SOLUTIONS.map((solution) => (
+                <li key={solution.slug}>
                   <Link
-                    to="/product"
-                    hash={module.id}
+                    to="/solutions/$slug"
+                    params={{ slug: solution.slug }}
                     className="text-sm text-white/65 transition-colors hover:text-white"
                   >
-                    {module.name}
+                    {solution.eyebrow}
                   </Link>
                 </li>
               ))}
