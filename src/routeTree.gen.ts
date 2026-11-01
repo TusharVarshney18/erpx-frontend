@@ -53,6 +53,8 @@ import { Route as CrmOpportunitiesRouteImport } from './routes/crm.opportunities
 import { Route as HrmsAttendanceRouteImport } from './routes/hrms.attendance'
 import { Route as HrmsEmployeesRouteImport } from './routes/hrms.employees'
 import { Route as HrmsLeavesRouteImport } from './routes/hrms.leaves'
+import { Route as HrmsMyAttendanceRouteImport } from './routes/hrms.my-attendance'
+import { Route as HrmsMyLeaveRouteImport } from './routes/hrms.my-leave'
 import { Route as HrmsPayrollRouteImport } from './routes/hrms.payroll'
 import { Route as InventoryCategoriesRouteImport } from './routes/inventory.categories'
 import { Route as InventoryLowStockRouteImport } from './routes/inventory.low-stock'
@@ -315,6 +317,16 @@ const HrmsLeavesRoute = HrmsLeavesRouteImport.update({
   path: '/hrms/leaves',
   getParentRoute: () => rootRouteImport,
 } as any)
+const HrmsMyAttendanceRoute = HrmsMyAttendanceRouteImport.update({
+  id: '/hrms/my-attendance',
+  path: '/hrms/my-attendance',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HrmsMyLeaveRoute = HrmsMyLeaveRouteImport.update({
+  id: '/hrms/my-leave',
+  path: '/hrms/my-leave',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const HrmsPayrollRoute = HrmsPayrollRouteImport.update({
   id: '/hrms/payroll',
   path: '/hrms/payroll',
@@ -556,6 +568,8 @@ export interface FileRoutesByFullPath {
   '/hrms/attendance': typeof HrmsAttendanceRoute
   '/hrms/employees': typeof HrmsEmployeesRoute
   '/hrms/leaves': typeof HrmsLeavesRoute
+  '/hrms/my-attendance': typeof HrmsMyAttendanceRoute
+  '/hrms/my-leave': typeof HrmsMyLeaveRoute
   '/hrms/payroll': typeof HrmsPayrollRoute
   '/inventory/categories': typeof InventoryCategoriesRoute
   '/inventory/low-stock': typeof InventoryLowStockRoute
@@ -641,6 +655,8 @@ export interface FileRoutesByTo {
   '/hrms/attendance': typeof HrmsAttendanceRoute
   '/hrms/employees': typeof HrmsEmployeesRoute
   '/hrms/leaves': typeof HrmsLeavesRoute
+  '/hrms/my-attendance': typeof HrmsMyAttendanceRoute
+  '/hrms/my-leave': typeof HrmsMyLeaveRoute
   '/hrms/payroll': typeof HrmsPayrollRoute
   '/inventory/categories': typeof InventoryCategoriesRoute
   '/inventory/low-stock': typeof InventoryLowStockRoute
@@ -727,6 +743,8 @@ export interface FileRoutesById {
   '/hrms/attendance': typeof HrmsAttendanceRoute
   '/hrms/employees': typeof HrmsEmployeesRoute
   '/hrms/leaves': typeof HrmsLeavesRoute
+  '/hrms/my-attendance': typeof HrmsMyAttendanceRoute
+  '/hrms/my-leave': typeof HrmsMyLeaveRoute
   '/hrms/payroll': typeof HrmsPayrollRoute
   '/inventory/categories': typeof InventoryCategoriesRoute
   '/inventory/low-stock': typeof InventoryLowStockRoute
@@ -814,6 +832,8 @@ export interface FileRouteTypes {
     | '/hrms/attendance'
     | '/hrms/employees'
     | '/hrms/leaves'
+    | '/hrms/my-attendance'
+    | '/hrms/my-leave'
     | '/hrms/payroll'
     | '/inventory/categories'
     | '/inventory/low-stock'
@@ -899,6 +919,8 @@ export interface FileRouteTypes {
     | '/hrms/attendance'
     | '/hrms/employees'
     | '/hrms/leaves'
+    | '/hrms/my-attendance'
+    | '/hrms/my-leave'
     | '/hrms/payroll'
     | '/inventory/categories'
     | '/inventory/low-stock'
@@ -984,6 +1006,8 @@ export interface FileRouteTypes {
     | '/hrms/attendance'
     | '/hrms/employees'
     | '/hrms/leaves'
+    | '/hrms/my-attendance'
+    | '/hrms/my-leave'
     | '/hrms/payroll'
     | '/inventory/categories'
     | '/inventory/low-stock'
@@ -1070,6 +1094,8 @@ export interface RootRouteChildren {
   HrmsAttendanceRoute: typeof HrmsAttendanceRoute
   HrmsEmployeesRoute: typeof HrmsEmployeesRoute
   HrmsLeavesRoute: typeof HrmsLeavesRoute
+  HrmsMyAttendanceRoute: typeof HrmsMyAttendanceRoute
+  HrmsMyLeaveRoute: typeof HrmsMyLeaveRoute
   HrmsPayrollRoute: typeof HrmsPayrollRoute
   InventoryCategoriesRoute: typeof InventoryCategoriesRoute
   InventoryLowStockRoute: typeof InventoryLowStockRoute
@@ -1421,6 +1447,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof HrmsLeavesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/hrms/my-attendance': {
+      id: '/hrms/my-attendance'
+      path: '/hrms/my-attendance'
+      fullPath: '/hrms/my-attendance'
+      preLoaderRoute: typeof HrmsMyAttendanceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/hrms/my-leave': {
+      id: '/hrms/my-leave'
+      path: '/hrms/my-leave'
+      fullPath: '/hrms/my-leave'
+      preLoaderRoute: typeof HrmsMyLeaveRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/hrms/payroll': {
       id: '/hrms/payroll'
       path: '/hrms/payroll'
@@ -1742,6 +1782,8 @@ const rootRouteChildren: RootRouteChildren = {
   HrmsAttendanceRoute: HrmsAttendanceRoute,
   HrmsEmployeesRoute: HrmsEmployeesRoute,
   HrmsLeavesRoute: HrmsLeavesRoute,
+  HrmsMyAttendanceRoute: HrmsMyAttendanceRoute,
+  HrmsMyLeaveRoute: HrmsMyLeaveRoute,
   HrmsPayrollRoute: HrmsPayrollRoute,
   InventoryCategoriesRoute: InventoryCategoriesRoute,
   InventoryLowStockRoute: InventoryLowStockRoute,

@@ -136,6 +136,12 @@ export type DataModuleProps = {
    * dialog while keeping the same create/update mutation and table behaviour.
    */
   formRenderer?: (props: FormRendererProps) => React.ReactNode;
+  /**
+   * Extra per-row actions rendered at the top of the row's "..." menu
+   * (return DropdownMenuItem elements). `refresh` reloads the table.
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- rows are untyped business-data records, like the rest of DataModule
+  rowActions?: (row: any, ctx: { orgId: string | null; refresh: () => void }) => React.ReactNode;
 };
 
 export type FormRendererProps = {
@@ -176,6 +182,7 @@ export function DataModule({
   permissionPrefix,
   createPermission,
   formRenderer,
+  rowActions,
 }: DataModuleProps) {
   const qc = useQueryClient();
   const { user, activeOrganizationId } = useAuth();
@@ -591,6 +598,10 @@ export function DataModule({
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
+                            {rowActions?.(row, {
+                              orgId,
+                              refresh: () => qc.invalidateQueries({ queryKey: [table, orgId] }),
+                            })}
                             {canUpdate && (
                               <DropdownMenuItem
                                 onClick={() => {
