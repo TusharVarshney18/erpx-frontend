@@ -14,13 +14,27 @@ export const Route = createFileRoute("/hrms/designations")({
         searchKeys={["name", "code"]}
         orderBy={{ column: "level", ascending: true }}
         fields={[
-          { key: "name", label: "Name", required: true },
-          { key: "code", label: "Code", required: true },
+          {
+            key: "name",
+            label: "Job title",
+            required: true,
+            placeholder: "e.g. Software Developer",
+            hint: "The role, not the person. Assign it to people in HRMS → Employees.",
+          },
+          {
+            key: "code",
+            label: "Code",
+            required: true,
+            placeholder: "e.g. SD",
+            hint: "A short unique code for this title.",
+          },
           {
             key: "level",
             label: "Level",
             type: "number",
             defaultValue: 0,
+            placeholder: "e.g. 2",
+            hint: "Seniority: 1 = junior. Higher numbers are more senior.",
             format: (v) => (v == null ? "—" : `L${v}`),
           },
         ]}

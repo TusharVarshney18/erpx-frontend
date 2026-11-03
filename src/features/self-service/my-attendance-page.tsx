@@ -22,7 +22,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { selfServiceApi, type AttendanceRecord } from "@/lib/api/self-service";
+import { browserLocation, selfServiceApi, type AttendanceRecord } from "@/lib/api/self-service";
 import { formatDuration, useMyEmployee, workedMinutes } from "./use-my-employee";
 import { NotLinkedCard } from "./not-linked-card";
 
@@ -90,9 +90,23 @@ function TodayCard({ orgId }: { orgId: string }) {
     refetchInterval: 60_000,
   });
 
+  const policy = useQuery({
+    queryKey: ["self", "attendance", "policy", orgId],
+    queryFn: () => selfServiceApi.policy(orgId),
+    staleTime: 5 * 60_000,
+  });
+  // Geofenced companies need the browser location; selfie mode is mobile-only.
+  const punchBlocked =
+    policy.data?.mode === "DISABLED"
+      ? "Self check-in is turned off for your company. HR records attendance."
+      : policy.data?.requiresSelfie
+        ? "Your company requires a selfie at check-in. Use the ERPX mobile app."
+        : null;
+  const location = () => (policy.data?.requiresLocation ? browserLocation() : Promise.resolve({}));
+
   const refresh = () => qc.invalidateQueries({ queryKey: ["self", "attendance"] });
   const checkIn = useMutation({
-    mutationFn: () => selfServiceApi.checkIn(orgId),
+    mutationFn: async () => selfServiceApi.checkIn(orgId, await location()),
     onSuccess: () => {
       toast.success("Checked in. Have a productive day!");
       refresh();
@@ -100,7 +114,7 @@ function TodayCard({ orgId }: { orgId: string }) {
     onError: (e: Error) => toast.error(e.message || "Could not check in"),
   });
   const checkOut = useMutation({
-    mutationFn: () => selfServiceApi.checkOut(orgId),
+    mutationFn: async () => selfServiceApi.checkOut(orgId, await location()),
     onSuccess: () => {
       toast.success("Checked out. See you tomorrow!");
       refresh();
@@ -132,6 +146,10 @@ function TodayCard({ orgId }: { orgId: string }) {
         <div className="flex flex-col items-stretch gap-2 md:min-w-[220px]">
           {today.isLoading ? (
             <Skeleton className="h-12 w-full" />
+          ) : punchBlocked && state !== "done" ? (
+            <p className="rounded-lg border bg-muted/50 px-4 py-3 text-sm text-muted-foreground">
+              {punchBlocked}
+            </p>
           ) : state === "out" ? (
             <Button
               size="lg"

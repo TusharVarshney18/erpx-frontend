@@ -104,6 +104,10 @@ export type Field = {
   defaultValue?: any;
   hideInTable?: boolean;
   hideInForm?: boolean;
+  /** Example value shown inside an empty text/number input. */
+  placeholder?: string;
+  /** One line of guidance shown under the input in the form. */
+  hint?: string;
   badge?: Record<string, string>;
   format?: (v: any, row: any) => React.ReactNode;
   sortable?: boolean;
@@ -1060,7 +1064,11 @@ function FormDialog({
                       value={values[f.key] ?? ""}
                       onChange={(e) => updateValue(f.key, e.target.value)}
                       required={f.required}
+                      placeholder={f.placeholder}
                     />
+                  )}
+                  {f.hint && !hasError && (
+                    <p className="text-xs text-muted-foreground">{f.hint}</p>
                   )}
                   {hasError && (
                     <p className="text-xs text-destructive">{errors[f.key]}</p>

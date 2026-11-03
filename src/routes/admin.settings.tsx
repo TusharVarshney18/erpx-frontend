@@ -56,8 +56,13 @@ import {
   KeyRound,
   Laptop,
   LogOut,
+  MapPin,
   Sparkles,
 } from "lucide-react";
+import {
+  AttendancePolicySettings,
+  type AttendanceMode,
+} from "@/features/hrms/attendance-policy-settings";
 
 export const Route = createFileRoute("/admin/settings")({
   head: () => ({ meta: [{ title: "Company Settings — Acme ERP" }] }),
@@ -126,6 +131,12 @@ type OrgSettings = {
   invoiceFooter?: string;
   signatoryName?: string;
   hsnMinDigits?: number;
+  attendanceMode?: AttendanceMode;
+  officeLatitude?: number | string | null;
+  officeLongitude?: number | string | null;
+  officeRadiusMeters?: number;
+  workdayStartTime?: string;
+  lateGraceMinutes?: number;
   aiEnabled?: boolean;
   aiMonthlyLimit?: number | null;
   aiMonthlyUsage?: number;
@@ -507,6 +518,11 @@ function CompanySettingsPage() {
                   <TabsTrigger value="profile" className="gap-1.5">
                     <Building2 className="h-4 w-4" /> Company Profile
                   </TabsTrigger>
+                  {isAdmin && (
+                    <TabsTrigger value="attendance" className="gap-1.5">
+                      <MapPin className="h-4 w-4" /> Attendance
+                    </TabsTrigger>
+                  )}
                   {isAdmin && (
                     <TabsTrigger value="ai" className="gap-1.5">
                       <Sparkles className="h-4 w-4" /> AI Copilot
@@ -1157,6 +1173,16 @@ function CompanySettingsPage() {
                     </Button>
                   </div>
                 </TabsContent>
+
+                {isAdmin && activeOrganizationId && (
+                  <TabsContent value="attendance" className="space-y-5">
+                    <AttendancePolicySettings
+                      key={`${activeOrganizationId}-${settingsLoaded}`}
+                      orgId={activeOrganizationId}
+                      initial={settings}
+                    />
+                  </TabsContent>
+                )}
 
                 {isAdmin && (
                   <TabsContent value="ai" className="space-y-5">
