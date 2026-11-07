@@ -125,3 +125,83 @@ export function resolveShortcutUrl(
 ): string | null {
   return shortcut.urls.find((u) => visibleUrls.has(u)) ?? null;
 }
+
+/**
+ * Tally-style voucher keys (TallyPrime layout). Function keys type no
+ * characters, so unlike page shortcuts these also work while a field has
+ * focus, which is how Tally users switch voucher type mid-entry.
+ * Browsers' own F5 (reload) and F7 (caret browsing) are suppressed on these
+ * keys; the page must be focused for that to happen.
+ */
+export type TallyShortcut = {
+  /** KeyboardEvent.key for function keys; KeyboardEvent.code for letters. */
+  key: string;
+  alt?: boolean;
+  label: string;
+  /** Short note shown in the help dialog. */
+  hint: string;
+} & ({ action: "navigate"; url: string; search?: Record<string, string> } | { action: "search" });
+
+export const TALLY_SHORTCUTS: TallyShortcut[] = [
+  {
+    key: "F4",
+    label: "Contra",
+    hint: "Bank / cash transfer",
+    action: "navigate",
+    url: "/accounting/vouchers",
+    search: { type: "contra" },
+  },
+  {
+    key: "F5",
+    label: "Payment",
+    hint: "Money paid out",
+    action: "navigate",
+    url: "/accounting/vouchers",
+    search: { type: "payment" },
+  },
+  {
+    key: "F6",
+    label: "Receipt",
+    hint: "Money received",
+    action: "navigate",
+    url: "/accounting/vouchers",
+    search: { type: "receipt" },
+  },
+  {
+    key: "F7",
+    label: "Journal",
+    hint: "Adjustment entry",
+    action: "navigate",
+    url: "/accounting/vouchers",
+    search: { type: "journal" },
+  },
+  { key: "F8", label: "Sales", hint: "Sales invoices", action: "navigate", url: "/sales/invoices" },
+  {
+    key: "F9",
+    label: "Purchase",
+    hint: "Purchase bills",
+    action: "navigate",
+    url: "/purchases/bills",
+  },
+  {
+    key: "F7",
+    alt: true,
+    label: "Stock Journal",
+    hint: "Stock movements",
+    action: "navigate",
+    url: "/inventory/stock-movements",
+  },
+  { key: "KeyG", alt: true, label: "Go To", hint: "Search pages and records", action: "search" },
+];
+
+/** Does this keydown match the Tally shortcut (exact modifiers, no Ctrl/Meta/Shift)? */
+export function matchesTally(e: KeyboardEvent, s: TallyShortcut): boolean {
+  if (e.ctrlKey || e.metaKey || e.shiftKey || e.altKey !== !!s.alt) return false;
+  return s.key.startsWith("Key") ? e.code === s.key : e.key === s.key;
+}
+
+export function tallyKeyLabel(s: TallyShortcut, mac: boolean): string {
+  const key = s.key.startsWith("Key") ? s.key.slice(3) : s.key;
+  if (!s.alt) return key;
+  return mac ? `⌥${key}` : `Alt+${key}`;
+}

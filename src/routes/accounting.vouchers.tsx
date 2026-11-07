@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { z } from "zod";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth";
@@ -29,7 +30,15 @@ import {
 import { Plus, Trash2, Loader2, Send, Scale, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 
+const VOUCHER_TYPE_VALUES = ["journal", "payment", "receipt", "contra", "opening"] as const;
+type VoucherType = (typeof VOUCHER_TYPE_VALUES)[number];
+
 export const Route = createFileRoute("/accounting/vouchers")({
+  // ?type= lets Tally-style keys (F4 Contra, F5 Payment, F6 Receipt, F7 Journal)
+  // open this page with a voucher type selected; see lib/shortcuts.ts.
+  validateSearch: z.object({
+    type: z.enum(VOUCHER_TYPE_VALUES).optional().catch(undefined),
+  }),
   head: () => ({ meta: [{ title: "Vouchers — Acme ERP" }] }),
   component: VouchersPage,
 });
@@ -51,7 +60,13 @@ function VouchersPage() {
   const access = useAccess();
   const orgId = activeOrganizationId;
 
-  const [type, setType] = useState("journal");
+  const navigate = useNavigate({ from: Route.fullPath });
+  const type: VoucherType = Route.useSearch().type ?? "journal";
+  const setType = (value: string) =>
+    navigate({
+      search: (prev) => ({ ...prev, type: value as VoucherType }),
+      replace: true,
+    });
   const [postingDate, setPostingDate] = useState(new Date().toISOString().slice(0, 10));
   const [description, setDescription] = useState("");
   const [lines, setLines] = useState<Line[]>([

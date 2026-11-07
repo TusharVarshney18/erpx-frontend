@@ -281,7 +281,7 @@ export function TopHeader() {
         </kbd>
       </div>
       <SearchPalette open={searchOpen} onOpenChange={setSearchOpen} />
-      <GlobalShortcuts />
+      <GlobalShortcuts onOpenSearch={() => setSearchOpen(true)} />
 
       <div className="ml-auto flex items-center gap-1 md:ml-2">
         {!featureAccess.isPremium && !featureAccess.isSuperAdmin && !featureAccess.isLoading && (

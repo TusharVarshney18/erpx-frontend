@@ -1,7 +1,13 @@
 import { useMemo } from "react";
 import { useAccess } from "@/hooks/useAccess";
 import { getVisibleNavigation } from "@/lib/navigation-access";
-import { PAGE_SHORTCUTS, resolveShortcutUrl, type PageShortcut } from "@/lib/shortcuts";
+import {
+  PAGE_SHORTCUTS,
+  TALLY_SHORTCUTS,
+  resolveShortcutUrl,
+  type PageShortcut,
+  type TallyShortcut,
+} from "@/lib/shortcuts";
 
 /** `title` is the sidebar title of the resolved page (e.g. "My Attendance"). */
 export type ShortcutTarget = { shortcut: PageShortcut; url: string; title: string };
@@ -15,6 +21,8 @@ export type ShortcutTarget = { shortcut: PageShortcut; url: string; title: strin
 export function useShortcutTargets(): {
   targets: ShortcutTarget[];
   byUrl: Map<string, PageShortcut>;
+  /** Tally voucher keys whose page the user can open (Go To is always on). */
+  tally: TallyShortcut[];
 } {
   const access = useAccess();
 
@@ -38,6 +46,7 @@ export function useShortcutTargets(): {
       targets.push({ shortcut, url, title: titles.get(url) ?? shortcut.label });
       byUrl.set(url, shortcut);
     }
-    return { targets, byUrl };
+    const tally = TALLY_SHORTCUTS.filter((s) => s.action !== "navigate" || visible.has(s.url));
+    return { targets, byUrl, tally };
   }, [access.context]);
 }
