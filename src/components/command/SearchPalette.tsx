@@ -10,8 +10,12 @@ import {
   CommandItem,
   CommandList,
   CommandSeparator,
+  CommandShortcut,
 } from "@/components/ui/command";
 import { useAccess } from "@/hooks/useAccess";
+import { useIsMac } from "@/hooks/useIsMac";
+import { useShortcutTargets } from "@/hooks/useShortcutTargets";
+import { pageShortcutLabel } from "@/lib/shortcuts";
 import { getVisibleNavigation, type VisibleNavItem } from "@/lib/navigation-access";
 import { FEATURE_SLUG_BY_ID } from "@/lib/access";
 import { useAuth } from "@/lib/auth";
@@ -117,6 +121,8 @@ export function SearchPalette({
   const navigate = useNavigate();
   const { activeOrganizationId } = useAuth();
   const [query, setQuery] = useState("");
+  const { byUrl: shortcutByUrl } = useShortcutTargets();
+  const mac = useIsMac();
 
   useEffect(() => {
     if (!open) setQuery("");
@@ -266,6 +272,11 @@ export function SearchPalette({
               >
                 <span className="flex-1">{item.title}</span>
                 {item.locked && <Lock className="h-3.5 w-3.5 text-amber-500" />}
+                {!item.locked && shortcutByUrl.has(item.url) && (
+                  <CommandShortcut>
+                    {pageShortcutLabel(shortcutByUrl.get(item.url)!.letter, mac)}
+                  </CommandShortcut>
+                )}
               </CommandItem>
             ))}
           </CommandGroup>

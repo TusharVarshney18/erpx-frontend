@@ -54,6 +54,9 @@ import { notificationsApi } from "@/lib/api/notifications";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { useAccess } from "@/hooks/useAccess";
 import { SearchPalette } from "@/components/command/SearchPalette";
+import { GlobalShortcuts } from "@/components/command/GlobalShortcuts";
+import { primaryKeyLabel } from "@/lib/shortcuts";
+import { useIsMac } from "@/hooks/useIsMac";
 import { DemoBadge } from "@/components/premium/DemoBadge";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -110,6 +113,7 @@ export function TopHeader() {
   const [orgName, setOrgName] = useState("");
   const [orgCode, setOrgCode] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
+  const isMacPlatform = useIsMac();
   const [switchingOrgId, setSwitchingOrgId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -273,10 +277,11 @@ export function TopHeader() {
           onFocus={() => setSearchOpen(true)}
         />
         <kbd className="pointer-events-none absolute right-2 top-1/2 hidden -translate-y-1/2 rounded border border-border bg-background px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground lg:inline-block">
-          ⌘K
+          {primaryKeyLabel("K", isMacPlatform)}
         </kbd>
       </div>
       <SearchPalette open={searchOpen} onOpenChange={setSearchOpen} />
+      <GlobalShortcuts />
 
       <div className="ml-auto flex items-center gap-1 md:ml-2">
         {!featureAccess.isPremium && !featureAccess.isSuperAdmin && !featureAccess.isLoading && (
