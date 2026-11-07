@@ -378,6 +378,14 @@ function AuthPage() {
       });
 
     if (oauth_grant) {
+      // A grant is single-use (and lives 5 minutes). Drop it from the URL
+      // before exchanging so a reload or Back can't replay a spent grant,
+      // which the backend answers with 401.
+      nav({
+        to: "/auth",
+        search: { email: initialEmail ?? undefined, plan: plan ?? undefined },
+        replace: true,
+      });
       setOauthBusy(true);
       completeOAuthLogin(oauth_grant)
         .then((result) => {

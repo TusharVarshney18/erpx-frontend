@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react";
-import { api, setTokens, clearTokens, getAccessToken } from "@/lib/api/client";
+import { api, setTokens, clearTokens, getAccessToken, refreshSession } from "@/lib/api/client";
 
 export type OrganizationInfo = {
   id: string;
@@ -306,14 +306,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
     setTokens("", rt);
-    api
-      .post<{ accessToken: string; refreshToken: string; expiresAt: string }>("/auth/refresh", {
-        refreshToken: rt,
-      })
-      .then((data) => {
-        setTokens(data.accessToken, data.refreshToken);
-        return fetchMe();
-      })
+    // Goes through the client's single-flight, cross-tab refresh so a request
+    // fired during start-up can't spend the same rotating refresh token twice
+    // (the backend revokes the whole session on reuse, causing 401s everywhere).
+    refreshSession()
+      .then(() => fetchMe())
       .then(() => fetchOrganizations())
       .catch(() => {
         clearTokens();

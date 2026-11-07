@@ -111,31 +111,97 @@ function isMfaStepUpBody(body: unknown): boolean {
   );
 }
 
-async function refreshAccessToken(): Promise<void> {
-  if (!tokens.refreshToken) throw new Error("No refresh token");
+/** The refresh token was refused (expired / revoked): the session is over. */
+export class SessionExpiredError extends Error {
+  constructor() {
+    super("Session expired");
+    this.name = "SessionExpiredError";
+  }
+}
+
+// Another tab rotated or cleared the refresh token: follow it, so this tab never
+// replays a rotated token (the backend revokes the whole session on reuse).
+if (isBrowser) {
+  window.addEventListener("storage", (e) => {
+    if (e.key !== "refreshToken") return;
+    tokens.refreshToken = e.newValue;
+    if (!e.newValue) tokens.accessToken = null;
+  });
+}
+
+/** Run `fn` while holding a lock shared by every tab (falls back to no lock). */
+async function withCrossTabLock<T>(fn: () => Promise<T>): Promise<T> {
+  const locks = isBrowser ? (navigator as Navigator & { locks?: LockManager }).locks : undefined;
+  if (!locks?.request) return fn();
+  return locks.request("erpx-token-refresh", fn) as Promise<T>;
+}
+
+/**
+ * Exchange the refresh token for a new access token. Single-flight within the
+ * tab and serialized across tabs, because refresh tokens rotate and the
+ * backend treats a second use of the same token as theft (revoking the whole
+ * session, after which every call answers 401).
+ */
+export function refreshSession(): Promise<void> {
   if (refreshPromise) return refreshPromise;
 
-  refreshPromise = (async () => {
+  refreshPromise = withCrossTabLock(async () => {
+    // Read the latest token inside the lock: another tab may have rotated it.
+    const refreshToken = loadRefreshToken() ?? tokens.refreshToken;
+    if (!refreshToken) throw new SessionExpiredError();
+
     const res = await fetchWithTimeout(`${API_BASE}/auth/refresh`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ refreshToken: tokens.refreshToken }),
+      body: JSON.stringify({ refreshToken }),
     });
 
-    if (!res.ok) {
+    if (res.status === 400 || res.status === 401 || res.status === 403) {
       clearTokens();
-      throw new Error("Failed to refresh token");
+      throw new SessionExpiredError();
     }
+    if (!res.ok) throw new Error(`Could not refresh the session (HTTP ${res.status})`);
+
     const body = await res.json();
     const data = body.data || body;
     tokens.accessToken = data.accessToken;
     persistRefreshToken(data.refreshToken);
-  })();
-
-  try {
-    await refreshPromise;
-  } finally {
+  }).finally(() => {
     refreshPromise = null;
+  });
+
+  return refreshPromise;
+}
+
+/**
+ * Auth endpoints that answer 401 for bad input (wrong password, used OAuth
+ * grant, expired code). A refresh cannot fix those, so never retry them.
+ */
+const NO_REFRESH_PATHS = [
+  "/auth/login",
+  "/auth/register",
+  "/auth/refresh",
+  "/auth/oauth",
+  "/auth/select-org",
+  "/auth/mfa/verify",
+  "/auth/otp",
+  "/auth/forgot-password",
+  "/auth/reset-password",
+  "/auth/verify-email",
+  "/auth/logout",
+];
+
+function canRefreshFor(path: string): boolean {
+  return !NO_REFRESH_PATHS.some((p) => path.startsWith(p));
+}
+
+/** Log out cleanly after the session ended: drop tokens and go to sign-in once. */
+function endSession(): void {
+  clearTokens();
+  if (!isBrowser) return;
+  window.dispatchEvent(new CustomEvent("erpx:session-expired"));
+  if (!window.location.pathname.startsWith("/auth")) {
+    window.location.href = "/auth";
   }
 }
 
@@ -164,29 +230,37 @@ async function request<T>(
     headers.set("Content-Type", "application/json");
   }
 
-  if (tokens.accessToken) {
-    headers.set("Authorization", `Bearer ${tokens.accessToken}`);
+  const refreshable = canRefreshFor(normalizedPath);
+
+  // A session restore (page load) or refresh is in flight: wait for the new
+  // access token instead of firing a tokenless request that is bound to 401.
+  if (refreshable && !tokens.accessToken && refreshPromise) {
+    await refreshPromise.catch(() => undefined);
   }
 
-  // Only attempt a token refresh when the request actually carried a token.
-  // Unauthenticated calls (e.g. /auth/login) return 401 for bad credentials,
-  // and refreshing there just doubles the latency.
-  const hadAuth = Boolean(tokens.accessToken);
+  const sentToken = tokens.accessToken;
+  if (sentToken) {
+    headers.set("Authorization", `Bearer ${sentToken}`);
+  }
 
   let res = await fetchWithTimeout(url, { ...fetchOptions, headers });
 
-  if (res.status === 401 && hadAuth && tokens.refreshToken) {
-    try {
-      await refreshAccessToken();
-      headers.set("Authorization", `Bearer ${tokens.accessToken}`);
-      res = await fetchWithTimeout(url, { ...fetchOptions, headers });
-    } catch {
-      clearTokens();
-      if (isBrowser) {
-        window.location.href = "/auth";
+  // Access token expired: refresh once, then retry once. If another request
+  // already refreshed while this one was in flight, just retry with the new token.
+  if (res.status === 401 && refreshable && (sentToken || tokens.refreshToken)) {
+    if (!tokens.accessToken || tokens.accessToken === sentToken) {
+      try {
+        await refreshSession();
+      } catch (error) {
+        if (error instanceof SessionExpiredError) {
+          endSession();
+          throw error;
+        }
+        throw error; // network trouble: keep the session, surface the error
       }
-      throw new Error("Session expired");
     }
+    headers.set("Authorization", `Bearer ${tokens.accessToken}`);
+    res = await fetchWithTimeout(url, { ...fetchOptions, headers });
   }
 
   if (res.status === 204) {
