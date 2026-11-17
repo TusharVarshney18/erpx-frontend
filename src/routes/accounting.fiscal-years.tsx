@@ -196,14 +196,14 @@ function FiscalYearsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {fy.periods.length === 0 ? (
+                  {(fy.periods ?? []).length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={5} className="py-6 text-center text-sm text-muted-foreground">
                         No monthly periods defined.
                       </TableCell>
                     </TableRow>
                   ) : (
-                    fy.periods.map((p) => (
+                    (fy.periods ?? []).map((p) => (
                       <TableRow key={p.id}>
                         <TableCell className="font-medium">Period {p.periodNumber}</TableCell>
                         <TableCell className="tabular-nums">{new Date(p.startDate).toLocaleDateString("en-IN")}</TableCell>
