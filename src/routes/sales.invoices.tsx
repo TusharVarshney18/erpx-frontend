@@ -23,6 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Plus, MoreHorizontal, Pencil, Trash2, Send, Printer, Copy, RefreshCw, Loader2, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { InvoiceEditor } from "@/components/invoices/InvoiceEditor";
+import { stateCodeFromGstin, toStateCode } from "@/components/invoices/gst";
 import { InvoicePrint } from "@/components/invoices/InvoicePrint";
 
 export const Route = createFileRoute("/sales/invoices")({
@@ -210,7 +211,11 @@ function InvoicesPage() {
         onOpenChange={(o) => { setEditorOpen(o); if (!o) setEditId(null); }}
         orgId={orgId ?? ""}
         invoiceId={editId}
-        sellerStateCode={settings?.stateCode}
+        sellerStateCode={
+          toStateCode(settings?.stateCode) ||
+          stateCodeFromGstin(settings?.gstin) ||
+          toStateCode(settings?.state)
+        }
         onSaved={() => invalidate()}
       />
 

@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/select";
 import { Plus, Trash2, Loader2, Save, Columns2, Rows3, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
-import { GST_STATES } from "./gst";
+import { GST_STATES, stateCodeFromGstin, toStateCode } from "./gst";
 
 type Customer = {
   id: string;
@@ -129,7 +129,7 @@ export function InvoiceEditor({
     setIssueDate(existing.issueDate?.slice(0, 10) ?? issueDate);
     setDueDate(existing.dueDate?.slice(0, 10) ?? dueDate);
     setCurrency(existing.currency ?? "INR");
-    setPlaceOfSupply(existing.placeOfSupply ?? "");
+    setPlaceOfSupply(toStateCode(existing.placeOfSupply) || (existing.placeOfSupply ?? ""));
     setReverseCharge(Boolean(existing.reverseCharge));
     setTransportMode(existing.transportMode ?? "");
     setVehicleNumber(existing.vehicleNumber ?? "");
@@ -157,14 +157,19 @@ export function InvoiceEditor({
   const customer = customers.find((c) => c.id === companyId);
   useEffect(() => {
     if (customer && !placeOfSupply) {
-      setPlaceOfSupply(customer.stateCode || customer.state || "");
+      setPlaceOfSupply(
+        toStateCode(customer.stateCode) ||
+          stateCodeFromGstin(customer.gstNumber) ||
+          toStateCode(customer.state),
+      );
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [companyId]);
 
-  const interState = Boolean(
-    sellerStateCode && placeOfSupply && sellerStateCode.trim() !== placeOfSupply.trim(),
-  );
+  // Compare canonical codes so "27" and "Maharashtra" count as the same state.
+  const sellerCode = toStateCode(sellerStateCode);
+  const posCode = toStateCode(placeOfSupply);
+  const interState = Boolean(sellerCode && posCode && sellerCode !== posCode);
 
   const setLine = (i: number, patch: Partial<Line>) =>
     setLines((prev) => prev.map((l, idx) => (idx === i ? { ...l, ...patch } : l)));

@@ -164,7 +164,7 @@ const createItems = (): NavGroup[] => [
         moduleKey: "reports",
         children: [
           { title: "Financial Reports", url: "/reports/financial", permission: ["financial_report:read", "report:read"], featureKey: "advancedReports" },
-          { title: "GST Reports", url: "/reports/gst", permission: ["gst_report:read", "report:read"], featureKey: "advancedReports" },
+          { title: "GST Returns", url: "/reports/gst", permission: ["gst_report:read", "report:read"], featureKey: "advancedReports" },
           { title: "Sales Reports", url: "/reports/sales", permission: ["sales_report:read", "report:read"] },
           { title: "Inventory Reports", url: "/reports/inventory", permission: ["inventory_report:read", "report:read"] },
         ],
