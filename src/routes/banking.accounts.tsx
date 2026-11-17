@@ -224,7 +224,7 @@ function Page() {
         <KpiCard label="Accounts" value={String(summary?.accountCount ?? 0)} icon={Landmark} />
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-card p-2">
+      <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-border/80 bg-card/90 p-2 shadow-card backdrop-blur">
         <div className="relative min-w-0 flex-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -629,7 +629,7 @@ function ViewAccountDialog({
           </div>
         )}
 
-        <div className="rounded-xl border border-border bg-card">
+        <div className="rounded-2xl border border-border/80 bg-card shadow-card">
           <div className="border-b border-border px-4 py-3 text-sm font-semibold">
             Recent Transactions
           </div>
@@ -690,7 +690,7 @@ function ViewAccountDialog({
 
 function DetailStat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-border bg-card p-3">
+    <div className="rounded-2xl border border-border/80 bg-card shadow-card p-3">
       <div className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</div>
       <div className="truncate text-base font-bold">{value}</div>
     </div>
@@ -715,7 +715,7 @@ function ErrorState({ message, onRetry }: { message: string; onRetry: () => void
 function EmptyState({ onNew }: { onNew: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center gap-3 px-6 py-16 text-center">
-      <div className="grid h-12 w-12 place-items-center rounded-xl bg-accent text-accent-foreground">
+      <div className="grid h-14 w-14 place-items-center rounded-2xl gradient-primary text-white shadow-glow">
         <Inbox className="h-6 w-6" />
       </div>
       <div className="text-base font-semibold">No bank accounts yet</div>

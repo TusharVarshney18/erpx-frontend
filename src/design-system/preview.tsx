@@ -123,7 +123,7 @@ function DesignSystemPreview() {
         <StaggerContainer className="space-y-12">
           <StaggerItem>
             <SectionHeader title="Typography" variant="section" />
-            <div className="space-y-2 p-4 rounded-xl border border-border bg-card">
+            <div className="space-y-2 p-4 rounded-2xl border border-border/80 bg-card shadow-card">
               <p className="text-display">Display</p>
               <p className="text-h1">Heading 1</p>
               <p className="text-h2">Heading 2</p>
@@ -146,7 +146,7 @@ function DesignSystemPreview() {
 
           <StaggerItem>
             <SectionHeader title="Buttons" variant="section" />
-            <div className="flex flex-wrap gap-3 p-4 rounded-xl border border-border bg-card">
+            <div className="flex flex-wrap gap-3 p-4 rounded-2xl border border-border/80 bg-card shadow-card">
               <Button variant="default">Default</Button>
               <Button variant="premium">Premium</Button>
               <Button variant="secondary">Secondary</Button>
@@ -165,7 +165,7 @@ function DesignSystemPreview() {
 
           <StaggerItem>
             <SectionHeader title="Badges" variant="section" />
-            <div className="flex flex-wrap gap-2 p-4 rounded-xl border border-border bg-card">
+            <div className="flex flex-wrap gap-2 p-4 rounded-2xl border border-border/80 bg-card shadow-card">
               <Badge>Default</Badge>
               <Badge variant="secondary">Secondary</Badge>
               <Badge variant="success">Success</Badge>
@@ -230,7 +230,7 @@ function DesignSystemPreview() {
 
           <StaggerItem>
             <SectionHeader title="Inputs" variant="section" />
-            <div className="space-y-3 p-4 rounded-xl border border-border bg-card max-w-sm">
+            <div className="space-y-3 p-4 rounded-2xl border border-border/80 bg-card shadow-card max-w-sm">
               <Input placeholder="Default input" />
               <Input
                 placeholder="With left icon"
@@ -246,26 +246,26 @@ function DesignSystemPreview() {
           <StaggerItem>
             <SectionHeader title="States" variant="section" />
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="rounded-xl border border-border bg-card">
+              <div className="rounded-2xl border border-border/80 bg-card shadow-card">
                 <LoadingState variant="spinner" text="Loading..." />
               </div>
-              <div className="rounded-xl border border-border bg-card">
+              <div className="rounded-2xl border border-border/80 bg-card shadow-card">
                 <LoadingState variant="skeleton" />
               </div>
-              <div className="rounded-xl border border-border bg-card">
+              <div className="rounded-2xl border border-border/80 bg-card shadow-card">
                 <LoadingState variant="pulse" />
               </div>
-              <div className="rounded-xl border border-border bg-card">
+              <div className="rounded-2xl border border-border/80 bg-card shadow-card">
                 <EmptyState
                   title="No items found"
                   description="Get started by creating your first item."
                   action={{ label: "Create Item", onClick: () => {} }}
                 />
               </div>
-              <div className="rounded-xl border border-border bg-card">
+              <div className="rounded-2xl border border-border/80 bg-card shadow-card">
                 <ErrorState onRetry={() => {}} />
               </div>
-              <div className="rounded-xl border border-border bg-card">
+              <div className="rounded-2xl border border-border/80 bg-card shadow-card">
                 <ErrorState
                   title="Connection lost"
                   message="Please check your internet connection and try again."
@@ -277,7 +277,7 @@ function DesignSystemPreview() {
 
           <StaggerItem>
             <SectionHeader title="Avatars" variant="section" />
-            <div className="flex items-center gap-4 p-4 rounded-xl border border-border bg-card">
+            <div className="flex items-center gap-4 p-4 rounded-2xl border border-border/80 bg-card shadow-card">
               <Avatar>
                 <AvatarImage src="https://github.com/shadcn.png" alt="@shadcn" />
                 <AvatarFallback>CN</AvatarFallback>

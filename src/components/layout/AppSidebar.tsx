@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { ChevronRight, Lock, Sparkles } from "lucide-react";
+import { ChevronRight, Crown, Lock, Sparkles, Zap } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -41,28 +41,37 @@ export function AppSidebar() {
   };
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-sidebar-border">
-      <SidebarHeader className="border-b border-sidebar-border">
-        <div className="flex items-center gap-2.5 px-2 py-1.5">
-          <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg gradient-primary shadow-glow">
-            <Sparkles className="h-5 w-5 text-white" />
+    <Sidebar
+      collapsible="icon"
+      className="border-r border-sidebar-border [&_[data-sidebar=sidebar]]:bg-[radial-gradient(420px_260px_at_0%_0%,rgb(76_141_255/0.14),transparent_60%),radial-gradient(300px_300px_at_100%_100%,rgb(15_163_163/0.06),transparent_60%)]"
+    >
+      <SidebarHeader className="px-3 pb-3 pt-4">
+        <div className="flex items-center gap-3 px-1">
+          <div className="relative grid h-9 w-9 shrink-0 place-items-center rounded-xl gradient-primary shadow-glow">
+            <span className="font-display text-[15px] font-extrabold tracking-tight text-white">
+              X
+            </span>
+            <span className="absolute inset-0 rounded-xl ring-1 ring-inset ring-white/20" />
           </div>
           {!collapsed && (
             <div className="min-w-0">
-              <div className="truncate text-sm font-bold text-sidebar-foreground">ERPX</div>
-              <div className="truncate text-[11px] text-sidebar-foreground/60">
-                Enterprise Suite
+              <div className="truncate font-display text-[15px] font-extrabold tracking-tight text-white">
+                ERPX
+              </div>
+              <div className="truncate text-[10.5px] font-medium uppercase tracking-[0.14em] text-sidebar-foreground/50">
+                Business Cloud
               </div>
             </div>
           )}
         </div>
       </SidebarHeader>
+      <div className="mx-4 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 
       <SidebarContent className="min-h-0 flex-1 overflow-y-auto px-1.5 pb-4">
         {groups.map((group) => (
           <SidebarGroup key={group.label}>
             {!collapsed && (
-              <SidebarGroupLabel className="text-[10px] uppercase tracking-wider text-sidebar-foreground/50">
+              <SidebarGroupLabel className="px-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-sidebar-foreground/40">
                 {group.label}
               </SidebarGroupLabel>
             )}
@@ -77,12 +86,18 @@ export function AppSidebar() {
         ))}
       </SidebarContent>
 
-      <SidebarFooter className="shrink-0 border-t border-sidebar-border">
+      <SidebarFooter className="shrink-0 p-3">
         {!collapsed ? (
-          <div className="rounded-lg bg-sidebar-accent/60 p-3">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-semibold text-sidebar-foreground">
-                {planLabel(access.plan)}
+          <div className="relative overflow-hidden rounded-xl border border-white/10 bg-gradient-to-br from-[#4C8DFF]/25 via-[#4C8DFF]/10 to-transparent p-3.5">
+            <div className="pointer-events-none absolute -right-6 -top-6 h-20 w-20 rounded-full bg-[#4C8DFF]/30 blur-2xl" />
+            <div className="relative flex items-center justify-between">
+              <span className="inline-flex items-center gap-1.5 text-[11px] font-bold tracking-wide text-white">
+                {access.isPremium || access.isSuperAdmin ? (
+                  <Crown className="h-3.5 w-3.5 text-amber-300" />
+                ) : (
+                  <Zap className="h-3.5 w-3.5 text-[#8FB6FF]" />
+                )}
+                {planLabel(access.plan)} PLAN
               </span>
               {access.isSuperAdmin && (
                 <Badge variant="secondary" className="text-[9px]">
@@ -90,7 +105,7 @@ export function AppSidebar() {
                 </Badge>
               )}
             </div>
-            <div className="mt-0.5 text-[10px] text-sidebar-foreground/60">
+            <div className="relative mt-1 text-[11px] leading-snug text-sidebar-foreground/70">
               {access.isSuperAdmin
                 ? "Full platform access"
                 : access.isPremium
@@ -99,8 +114,8 @@ export function AppSidebar() {
             </div>
           </div>
         ) : (
-          <div className="grid h-8 w-8 place-items-center rounded-lg bg-sidebar-accent/60">
-            <Sparkles className="h-4 w-4 text-sidebar-foreground" />
+          <div className="grid h-8 w-8 place-items-center rounded-lg bg-[#4C8DFF]/20">
+            <Sparkles className="h-4 w-4 text-[#8FB6FF]" />
           </div>
         )}
       </SidebarFooter>
@@ -200,7 +215,7 @@ function SidebarItem({ item, pathname }: { item: VisibleNavItem; pathname: strin
           </SidebarMenuButton>
         </CollapsibleTrigger>
         <CollapsibleContent>
-          <SidebarMenuSub>
+          <SidebarMenuSub className="border-l-white/10">
             {item.children.map((c) => (
               <SidebarMenuSubItem key={c.url}>
                 {c.locked && c.lockedModule ? (

@@ -110,6 +110,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "format-detection", content: "telephone=no" },
     ],
     links: [
+      { rel: "preconnect", href: "https://fonts.googleapis.com" },
+      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
+      {
+        rel: "stylesheet",
+        href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap",
+      },
       { rel: "stylesheet", href: appCss },
       { rel: "manifest", href: "/site.webmanifest" },
       { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
@@ -166,11 +172,11 @@ function RootComponent() {
           ) : (
             <AuthGate>
               <SidebarProvider>
-                <div className="flex min-h-screen w-full bg-background">
+                <div className="flex min-h-screen w-full">
                   <AppSidebar />
-                  <SidebarInset className="min-w-0 flex-1">
+                  <SidebarInset className="min-w-0 flex-1 bg-transparent">
                     <TopHeader />
-                    <main className="min-w-0 flex-1 p-4 sm:p-6">
+                    <main className="mx-auto w-full min-w-0 max-w-[1600px] flex-1 px-4 py-5 sm:px-6 sm:py-7 lg:px-8">
                       <Outlet />
                     </main>
                   </SidebarInset>

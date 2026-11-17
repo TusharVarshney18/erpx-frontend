@@ -24,13 +24,6 @@ const iconMap: Record<string, LucideIcon> = {
   Users,
 };
 
-const colorMap: Record<string, string> = {
-  primary: "bg-primary/10 text-primary border-primary/20",
-  success: "bg-success/10 text-success border-success/20",
-  info: "bg-info/10 text-info border-info/20",
-  warning: "bg-warning/10 text-warning border-warning/20",
-};
-
 interface QuickAction {
   id: string;
   label: string;
@@ -58,33 +51,34 @@ export function QuickActions({ actions, onAction, className }: QuickActionsProps
   };
 
   return (
-    <div className={cn("rounded-xl border border-border bg-card shadow-sm", className)}>
-      <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+    <div className={cn("overflow-hidden rounded-2xl border border-border/80 bg-card shadow-card", className)}>
+      <div className="flex items-center justify-between border-b border-border/70 px-5 py-4">
         <div className="flex flex-col">
-          <span className="text-sm font-semibold">Quick Actions</span>
-          <span className="text-[11px] text-muted-foreground">Common tasks</span>
+          <span className="font-display text-[15px] font-semibold tracking-tight">Quick actions</span>
+          <span className="text-[11px] text-muted-foreground">Jump straight into common tasks</span>
         </div>
       </div>
 
       <div className="p-4">
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
           {actions.map((action) => {
             const Icon =
               typeof action.icon === "string" ? iconMap[action.icon] || Plus : action.icon;
             return (
               <motion.button
                 key={action.id}
-                whileHover={{ scale: 1.02 }}
+                whileHover={{ y: -2 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => handleClick(action)}
                 className={cn(
-                  "flex items-center gap-2.5 rounded-lg border p-3 text-left transition-all",
-                  "hover:shadow-sm",
-                  colorMap[action.color],
+                  "group flex flex-col items-start gap-3 rounded-xl border border-border/80 bg-gradient-to-b from-card to-muted/40 p-3.5 text-left transition-all",
+                  "hover:border-primary/30 hover:shadow-md",
                 )}
               >
-                <Icon className="h-4 w-4 shrink-0" />
-                <span className="text-xs font-medium">{action.label}</span>
+                <span className="grid h-9 w-9 place-items-center rounded-lg bg-primary/10 text-primary ring-1 ring-inset ring-primary/15 transition group-hover:gradient-primary group-hover:text-white">
+                  <Icon className="h-4 w-4 shrink-0" />
+                </span>
+                <span className="text-[13px] font-semibold text-foreground">{action.label}</span>
               </motion.button>
             );
           })}

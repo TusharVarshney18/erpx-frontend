@@ -112,7 +112,7 @@ export function ReportPage({ title, subtitle, endpoint, columns }: ReportPagePro
         }
       />
 
-      <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-card p-2">
+      <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-border/80 bg-card/90 p-2 shadow-card backdrop-blur">
         <Input
           placeholder="Search…"
           className="h-9 border-0 bg-muted/50"
@@ -139,7 +139,7 @@ export function ReportPage({ title, subtitle, endpoint, columns }: ReportPagePro
             </div>
           ) : rows.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-3 px-6 py-16 text-center">
-              <div className="grid h-12 w-12 place-items-center rounded-xl bg-accent text-accent-foreground">
+              <div className="grid h-14 w-14 place-items-center rounded-2xl gradient-primary text-white shadow-glow">
                 <Inbox className="h-6 w-6" />
               </div>
               <div className="text-base font-semibold">No data</div>

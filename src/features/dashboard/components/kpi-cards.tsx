@@ -1,13 +1,11 @@
 "use client";
 
-import React from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "@tanstack/react-router";
 import {
   TrendingUp,
   TrendingDown,
   Minus,
-  Lightbulb,
   IndianRupee,
   Wallet,
   PiggyBank,
@@ -17,11 +15,12 @@ import {
   Package,
   Building2,
   ArrowUpRight,
+  FileText,
+  ShoppingBag,
 } from "lucide-react";
 import { AnimatedContainer } from "@/design-system";
 import { cn } from "@/design-system";
 import type { KPI } from "../data";
-import { useState } from "react";
 
 const kpiIcons: Record<string, typeof IndianRupee> = {
   revenue: IndianRupee,
@@ -32,6 +31,8 @@ const kpiIcons: Record<string, typeof IndianRupee> = {
   deals: Target,
   inventory: Package,
   employees: Building2,
+  invoices: FileText,
+  purchases: ShoppingBag,
 };
 
 interface KPICardsProps {
@@ -40,7 +41,7 @@ interface KPICardsProps {
 
 export function KPICards({ data }: KPICardsProps) {
   return (
-    <div className="grid grid-cols-1 gap-4 mb-8 sm:grid-cols-2 lg:grid-cols-[repeat(auto-fit,minmax(200px,1fr))]">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-[repeat(auto-fit,minmax(210px,1fr))]">
       {data.map((kpi, i) => (
         <KPICard key={kpi.id} kpi={kpi} index={i} />
       ))}
@@ -49,76 +50,62 @@ export function KPICards({ data }: KPICardsProps) {
 }
 
 function KPICard({ kpi, index }: { kpi: KPI; index: number }) {
-  const [showInsight, setShowInsight] = useState(false);
   const navigate = useNavigate();
   const Icon = kpiIcons[kpi.id] || IndianRupee;
 
-  const trendIcon = kpi.trend === "up" ? TrendingUp : kpi.trend === "down" ? TrendingDown : Minus;
-  const trendColors = {
-    up: "text-success bg-success/10",
-    down: "text-destructive bg-destructive/10",
-    neutral: "text-muted-foreground bg-muted",
-  };
-  const trendColor = trendColors[kpi.trend];
+  const TrendIcon = kpi.trend === "up" ? TrendingUp : kpi.trend === "down" ? TrendingDown : Minus;
+  const trendColor = {
+    up: "text-success bg-success/10 ring-success/20",
+    down: "text-destructive bg-destructive/10 ring-destructive/20",
+    neutral: "text-muted-foreground bg-muted ring-border",
+  }[kpi.trend];
   const hasComparison =
     typeof kpi.change === "number" && Number.isFinite(kpi.change) && kpi.change !== 0;
-
-  const handleClick = () => {
-    if (kpi.drillHref) {
-      navigate({ to: kpi.drillHref as never });
-    }
-  };
 
   return (
     <AnimatedContainer delay={index * 0.05}>
       <motion.div
         whileHover={{ y: -2 }}
-        onHoverStart={() => setShowInsight(true)}
-        onHoverEnd={() => setShowInsight(false)}
-        onClick={handleClick}
-        className={`relative overflow-hidden rounded-xl border border-border bg-card p-5 shadow-sm hover:shadow-md hover:border-ring/30 transition-all duration-150 ${
-          kpi.drillHref ? "cursor-pointer" : "cursor-default"
-        }`}
+        transition={{ type: "spring", stiffness: 400, damping: 30 }}
+        onClick={() => kpi.drillHref && navigate({ to: kpi.drillHref as never })}
+        className={cn(
+          "group relative h-full overflow-hidden rounded-2xl border border-border/80 bg-card p-5 shadow-card transition-shadow duration-200 hover:border-primary/25 hover:shadow-md",
+          kpi.drillHref ? "cursor-pointer" : "cursor-default",
+        )}
       >
-        <div className="flex items-center justify-between mb-3">
-          <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-            {kpi.label}
-          </span>
+        {/* Brand rule on hover; colour elsewhere is reserved for up/down meaning. */}
+        <div className="absolute inset-x-0 top-0 h-[2px] bg-primary opacity-0 transition-opacity duration-200 group-hover:opacity-100" />
+
+        <div className="relative flex items-start justify-between">
+          <div className="grid h-10 w-10 place-items-center rounded-xl bg-primary/[0.08] text-primary ring-1 ring-inset ring-primary/15">
+            <Icon className="h-[18px] w-[18px]" />
+          </div>
           {hasComparison && (
             <div
               className={cn(
-                "flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium tabular-nums",
+                "flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold tabular-nums ring-1 ring-inset",
                 trendColor,
               )}
             >
-              {React.createElement(trendIcon, { className: "h-3 w-3" })}
+              <TrendIcon className="h-3 w-3" />
               {Math.abs(kpi.change)}%
             </div>
           )}
         </div>
 
-        <div className="flex items-baseline gap-1.5 mb-1">
-          <span className="text-2xl font-bold tracking-tight tabular-nums">{kpi.value}</span>
-          {kpi.drillHref && <ArrowUpRight className="h-3.5 w-3.5 text-muted-foreground" />}
+        <div className="relative mt-4 text-[12px] font-medium text-muted-foreground">{kpi.label}</div>
+        <div className="relative mt-1 flex items-center gap-1.5">
+          <span title={kpi.insight} className="font-display text-[26px] font-bold leading-none tracking-tight tabular-nums">
+            {kpi.value}
+          </span>
+          {kpi.drillHref && (
+            <ArrowUpRight className="h-4 w-4 text-muted-foreground/60 transition-all group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-primary" />
+          )}
         </div>
 
-        <p className="text-xs text-muted-foreground mb-2">{kpi.description}</p>
-
-        <motion.div
-          initial={false}
-          animate={{ height: showInsight ? "auto" : 0, opacity: showInsight ? 1 : 0 }}
-          transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
-          className="overflow-hidden"
-        >
-          <div className="flex items-start gap-1.5 pt-1 border-t border-border/50">
-            <Lightbulb className="h-3 w-3 text-amber-500 mt-0.5 shrink-0" />
-            <p className="text-[11px] text-muted-foreground leading-relaxed">{kpi.insight}</p>
-          </div>
-        </motion.div>
-
-        <div className="absolute -bottom-4 -right-4 h-16 w-16 rounded-full opacity-[0.03]">
-          <Icon className="h-full w-full" />
-        </div>
+        <p className="relative mt-3 line-clamp-1 text-xs text-muted-foreground" title={kpi.insight}>
+          {kpi.description}
+        </p>
       </motion.div>
     </AnimatedContainer>
   );

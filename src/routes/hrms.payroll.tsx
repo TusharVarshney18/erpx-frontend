@@ -186,7 +186,7 @@ function EmptyState({
 }) {
   return (
     <div className="flex flex-col items-center gap-3 py-16 text-center">
-      <div className="grid h-12 w-12 place-items-center rounded-xl bg-accent text-accent-foreground">
+      <div className="grid h-14 w-14 place-items-center rounded-2xl gradient-primary text-white shadow-glow">
         {icon}
       </div>
       <p className="font-semibold">{title}</p>
@@ -210,7 +210,7 @@ function PayrollPage() {
         title="Payroll"
         subtitle="Salary structures and payroll run processing"
         actions={
-          <div className="flex items-center gap-2 rounded-xl border border-border bg-card px-3 py-2 text-sm text-muted-foreground">
+          <div className="flex items-center gap-2 rounded-2xl border border-border/80 bg-card shadow-card px-3 py-2 text-sm text-muted-foreground">
             <Wallet className="h-4 w-4 text-primary" />
             Monthly compensation processing
           </div>

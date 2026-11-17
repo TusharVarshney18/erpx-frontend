@@ -27,7 +27,7 @@ export function StatCard({
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay, type: "tween", ease: [0.16, 1, 0.3, 1], duration: 0.4 }}
       className={cn(
-        "flex items-center gap-3 rounded-xl border border-border bg-card p-4",
+        "flex items-center gap-3 rounded-2xl border border-border/80 bg-card shadow-card p-4",
         "shadow-sm",
         className,
       )}

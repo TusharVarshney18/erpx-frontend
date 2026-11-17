@@ -24,3 +24,19 @@ export function formatINR(
     maximumFractionDigits: decimals,
   }).format(num);
 }
+
+/**
+ * Compact Indian notation for dashboards: ₹950, ₹12.4K, ₹3.2 L, ₹1.25 Cr.
+ * Use for headline figures only; tables should keep full `formatINR` values.
+ */
+export function formatINRCompact(value: string | number | null | undefined): string {
+  const num = Number(value ?? 0);
+  if (!Number.isFinite(num)) return "₹0";
+  const sign = num < 0 ? "-" : "";
+  const abs = Math.abs(num);
+  const trim = (n: number, d: number) => n.toFixed(d).replace(/\.0+$|(\.\d*[1-9])0+$/, "$1");
+  if (abs >= 1e7) return `${sign}₹${trim(abs / 1e7, 2)} Cr`;
+  if (abs >= 1e5) return `${sign}₹${trim(abs / 1e5, 2)} L`;
+  if (abs >= 1e3) return `${sign}₹${trim(abs / 1e3, 1)}K`;
+  return `${sign}₹${Math.round(abs)}`;
+}

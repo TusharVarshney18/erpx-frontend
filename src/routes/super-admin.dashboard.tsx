@@ -212,8 +212,8 @@ function SuperAdminDashboard() {
                   <AreaChart data={chartData}>
                     <defs>
                       <linearGradient id="revenue" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.2} />
-                        <stop offset="100%" stopColor="#3b82f6" stopOpacity={0} />
+                        <stop offset="0%" stopColor="var(--chart-1)" stopOpacity={0.2} />
+                        <stop offset="100%" stopColor="var(--chart-1)" stopOpacity={0} />
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -238,7 +238,7 @@ function SuperAdminDashboard() {
                     <Area
                       type="monotone"
                       dataKey="revenue"
-                      stroke="#3b82f6"
+                      stroke="var(--chart-1)"
                       fill="url(#revenue)"
                       strokeWidth={2}
                       name="Revenue"

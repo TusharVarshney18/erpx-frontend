@@ -163,7 +163,7 @@ function SuperAdminUsers() {
         subtitle={`${total} users across all organizations`}
       />
 
-      <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-card p-2">
+      <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-border/80 bg-card/90 p-2 shadow-card backdrop-blur">
         <div className="relative min-w-0 flex-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -217,7 +217,7 @@ function SuperAdminUsers() {
             </div>
           ) : filtered.length === 0 ? (
             <div className="flex flex-col items-center gap-3 py-16 text-center">
-              <div className="grid h-12 w-12 place-items-center rounded-xl bg-accent text-accent-foreground">
+              <div className="grid h-14 w-14 place-items-center rounded-2xl gradient-primary text-white shadow-glow">
                 <Users className="h-6 w-6" />
               </div>
               <p className="font-semibold">

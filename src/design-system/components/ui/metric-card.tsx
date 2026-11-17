@@ -61,7 +61,7 @@ export function MetricCard({
       whileTap={{ scale: 0.99 }}
       onClick={onClick}
       className={cn(
-        "relative flex flex-col gap-2 rounded-xl border border-border bg-card p-5 text-left",
+        "relative flex flex-col gap-2 rounded-2xl border border-border/80 bg-card shadow-card p-5 text-left",
         "shadow-sm hover:shadow-md hover:border-ring/30",
         "transition-all duration-150",
         onClick && "cursor-pointer",

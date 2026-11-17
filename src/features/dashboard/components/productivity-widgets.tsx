@@ -42,7 +42,7 @@ export function ProductivityWidgets({ tasks }: ProductivityWidgetsProps) {
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
       {/* Upcoming Tasks */}
       <AnimatedContainer delay={0.05}>
-        <div className="rounded-xl border border-border bg-card shadow-sm h-full">
+        <div className="rounded-2xl border border-border/80 bg-card shadow-card h-full">
           <div className="flex items-center justify-between px-5 py-4 border-b border-border">
             <div className="flex items-center gap-2">
               <Clock className="h-4 w-4 text-muted-foreground" />
@@ -90,7 +90,7 @@ export function ProductivityWidgets({ tasks }: ProductivityWidgetsProps) {
 
       {/* Calendar Widget */}
       <AnimatedContainer delay={0.1}>
-        <div className="rounded-xl border border-border bg-card shadow-sm h-full">
+        <div className="rounded-2xl border border-border/80 bg-card shadow-card h-full">
           <div className="flex items-center justify-between px-5 py-4 border-b border-border">
             <div className="flex items-center gap-2">
               <Calendar className="h-4 w-4 text-muted-foreground" />
@@ -131,7 +131,7 @@ export function ProductivityWidgets({ tasks }: ProductivityWidgetsProps) {
 
       {/* Pinned Reports & Bookmarks */}
       <AnimatedContainer delay={0.15}>
-        <div className="rounded-xl border border-border bg-card shadow-sm h-full">
+        <div className="rounded-2xl border border-border/80 bg-card shadow-card h-full">
           <div className="flex items-center justify-between px-5 py-4 border-b border-border">
             <div className="flex items-center gap-2">
               <Pin className="h-4 w-4 text-muted-foreground" />

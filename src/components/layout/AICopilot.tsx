@@ -107,7 +107,7 @@ export function AICopilot() {
       {open && (
         <div className="fixed bottom-5 right-5 z-50 flex h-[600px] max-h-[80vh] w-[380px] max-w-[calc(100vw-2.5rem)] flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-elevate animate-scale-in">
           <div className="flex items-center gap-2.5 border-b border-border bg-card px-4 py-3">
-            <div className="grid h-8 w-8 place-items-center rounded-lg gradient-primary">
+            <div className="grid h-8 w-8 place-items-center rounded-lg gradient-ai">
               <Sparkles className="h-4 w-4 text-white" />
             </div>
             <div className="min-w-0 flex-1">
@@ -140,7 +140,7 @@ export function AICopilot() {
                   </p>
                 </div>
                 <Button
-                  className="h-9 gradient-primary text-white"
+                  className="h-9 gradient-ai text-white"
                   onClick={() => setUpgradeOpen(true)}
                 >
                   <Crown className="mr-1.5 h-3.5 w-3.5" /> Upgrade to Premium
@@ -156,7 +156,7 @@ export function AICopilot() {
                     <div
                       className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm leading-relaxed ${
                         m.role === "user"
-                          ? "gradient-primary whitespace-pre-wrap text-white"
+                          ? "gradient-ai whitespace-pre-wrap text-white"
                           : "bg-muted text-foreground"
                       }`}
                     >
@@ -215,7 +215,7 @@ export function AICopilot() {
                 />
                 <Button
                   size="icon"
-                  className="h-9 w-9 gradient-primary"
+                  className="h-9 w-9 gradient-ai"
                   aria-label="Send message"
                   onClick={() => send()}
                   disabled={busy || !input.trim()}

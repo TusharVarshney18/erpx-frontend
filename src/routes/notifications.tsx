@@ -219,7 +219,7 @@ function NotificationsPage() {
             </div>
           ) : notifications.length === 0 ? (
             <div className="flex flex-col items-center gap-3 py-16 text-center">
-              <div className="grid h-12 w-12 place-items-center rounded-xl bg-accent text-accent-foreground">
+              <div className="grid h-14 w-14 place-items-center rounded-2xl gradient-primary text-white shadow-glow">
                 <BellOff className="h-6 w-6" />
               </div>
               <p className="font-semibold">

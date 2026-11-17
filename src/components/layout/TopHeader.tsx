@@ -173,9 +173,25 @@ export function TopHeader() {
 
   const unreadCount = unreadData?.count ?? 0;
 
+  // Restore the saved theme once on mount, then persist every change.
+  const [themeLoaded, setThemeLoaded] = useState(false);
   useEffect(() => {
+    try {
+      setDark(localStorage.getItem("theme") === "dark");
+    } catch {
+      /* storage unavailable */
+    }
+    setThemeLoaded(true);
+  }, []);
+  useEffect(() => {
+    if (!themeLoaded) return;
     document.documentElement.classList.toggle("dark", dark);
-  }, [dark]);
+    try {
+      localStorage.setItem("theme", dark ? "dark" : "light");
+    } catch {
+      /* storage unavailable */
+    }
+  }, [dark, themeLoaded]);
 
   const handleCreateOrg = async () => {
     if (!orgName.trim() || !orgCode.trim()) {
@@ -221,13 +237,19 @@ export function TopHeader() {
   };
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center gap-2 border-b border-border bg-background/70 px-3 backdrop-blur-xl sm:px-4">
-      <SidebarTrigger className="shrink-0" />
+    <header className="sticky top-0 z-30 flex h-16 items-center gap-2 border-b border-border/70 bg-background/75 px-3 backdrop-blur-xl backdrop-saturate-150 sm:px-5 lg:px-6">
+      <SidebarTrigger className="shrink-0 rounded-lg text-muted-foreground hover:text-foreground" />
+      <div className="mx-1 hidden h-6 w-px bg-border md:block" />
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="hidden h-9 gap-2 px-2 md:flex">
-            <Building2 className="h-4 w-4 text-primary" />
+          <Button
+            variant="ghost"
+            className="hidden h-10 gap-2.5 rounded-xl border border-transparent px-2 hover:border-border hover:bg-card md:flex"
+          >
+            <span className="grid h-7 w-7 place-items-center rounded-lg bg-gradient-to-br from-primary/15 to-[var(--primary-2)]/15 text-primary ring-1 ring-inset ring-primary/15">
+              <Building2 className="h-3.5 w-3.5" />
+            </span>
             <span className="max-w-[200px] truncate text-sm font-medium">
               {activeOrg?.name ?? "Select Company"}
             </span>
@@ -273,10 +295,10 @@ export function TopHeader() {
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           placeholder="Search pages…"
-          className="h-9 border-border bg-muted/50 pl-9 pr-16 focus-visible:bg-background"
+          className="h-10 rounded-xl border-border/80 bg-card/80 pl-9 pr-16 shadow-xs"
           onFocus={() => setSearchOpen(true)}
         />
-        <kbd className="pointer-events-none absolute right-2 top-1/2 hidden -translate-y-1/2 rounded border border-border bg-background px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground lg:inline-block">
+        <kbd className="pointer-events-none absolute right-2.5 top-1/2 hidden -translate-y-1/2 rounded-md border border-border bg-muted px-1.5 py-0.5 font-mono text-[10px] font-medium text-muted-foreground shadow-xs lg:inline-block">
           {primaryKeyLabel("K", isMacPlatform)}
         </kbd>
       </div>
@@ -292,7 +314,7 @@ export function TopHeader() {
             <DropdownMenuTrigger asChild>
               <Button
                 size="sm"
-                className="hidden h-9 gap-1.5 gradient-primary text-white shadow-glow sm:flex"
+                className="hidden h-9 gap-1.5 rounded-xl px-3.5 sm:flex"
               >
                 <Plus className="h-4 w-4" /> <span>Create</span>
               </Button>

@@ -40,16 +40,19 @@ interface ActivityTimelineProps {
 
 export function ActivityTimeline({ events }: ActivityTimelineProps) {
   return (
-    <div className="rounded-xl border border-border bg-card shadow-sm">
-      <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+    <div className="h-full overflow-hidden rounded-2xl border border-border/80 bg-card shadow-card">
+      <div className="flex items-center justify-between border-b border-border/70 px-5 py-4">
         <div className="flex flex-col">
-          <span className="text-sm font-semibold">Activity Timeline</span>
-          <span className="text-[11px] text-muted-foreground">Everything happening today</span>
+          <span className="font-display text-[15px] font-semibold tracking-tight">Activity</span>
+          <span className="text-[11px] text-muted-foreground">Latest changes across your organization</span>
         </div>
-        <button className="text-xs text-primary hover:underline font-medium">View All</button>
+        <button className="rounded-lg px-2.5 py-1 text-xs font-semibold text-primary transition hover:bg-primary/10">View all</button>
       </div>
 
       <div className="p-5">
+        {events.length === 0 && (
+          <p className="py-8 text-center text-sm text-muted-foreground">No activity recorded yet.</p>
+        )}
         <div className="relative space-y-0">
           {events.map((event, i) => {
             const Icon = eventIcons[event.type];
@@ -64,11 +67,11 @@ export function ActivityTimeline({ events }: ActivityTimelineProps) {
                 className="relative flex gap-4 pb-5 last:pb-0"
               >
                 {!isLast && (
-                  <div className="absolute left-[15px] top-8 bottom-0 w-px bg-border/60" />
+                  <div className="absolute left-[15px] top-9 bottom-1 w-px bg-gradient-to-b from-border to-transparent" />
                 )}
                 <div
                   className={cn(
-                    "flex h-7 w-7 shrink-0 items-center justify-center rounded-full",
+                    "flex h-8 w-8 shrink-0 items-center justify-center rounded-full ring-4 ring-card",
                     eventColors[event.type],
                   )}
                 >

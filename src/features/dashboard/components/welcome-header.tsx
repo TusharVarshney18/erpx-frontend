@@ -1,86 +1,56 @@
-"use client";
-
-import { Sparkles, Bell, Moon, Sun } from "lucide-react";
-import { Button } from "@/design-system";
-import { Avatar, AvatarFallback } from "@/design-system";
-import { useState, useEffect } from "react";
+import { Link } from "@tanstack/react-router";
+import { BarChart3, Sparkles } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface WelcomeHeaderProps {
   userName: string;
   organization: string;
-  notificationCount: number;
   onAIAssistant?: () => void;
-  onNotifications?: () => void;
 }
 
-export function WelcomeHeader({
-  userName,
-  organization,
-  notificationCount,
-  onAIAssistant,
-  onNotifications,
-}: WelcomeHeaderProps) {
-  const [dark, setDark] = useState(() => document.documentElement.classList.contains("dark"));
-  useEffect(() => {
-    document.documentElement.classList.toggle("dark", dark);
-    localStorage.setItem("theme", dark ? "dark" : "light");
-  }, [dark]);
-  const resolvedTheme = dark ? "dark" : "light";
-  const toggleTheme = () => setDark(!dark);
-  const hour = new Date().getHours();
-  const greeting = hour < 12 ? "Good Morning" : hour < 17 ? "Good Afternoon" : "Good Evening";
+/** Executive page header: greeting, context line and primary actions. */
+export function WelcomeHeader({ userName, organization, onAIAssistant }: WelcomeHeaderProps) {
+  const now = new Date();
+  const hour = now.getHours();
+  const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+  const date = now.toLocaleDateString("en-IN", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
 
   return (
-    <div className="flex flex-col gap-4 mb-8">
-      <div className="flex items-start justify-between">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-h1">
-            {greeting}, {userName}
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            {organization} &middot;{" "}
-            {new Date().toLocaleDateString("en-US", {
-              weekday: "long",
-              month: "long",
-              day: "numeric",
-              year: "numeric",
-            })}
-          </p>
+    <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+      <div className="min-w-0">
+        <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-muted-foreground">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-success/25 bg-success/10 px-2.5 py-0.5 font-semibold text-success">
+            <span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse-ring" />
+            Live
+          </span>
+          <span>{date}</span>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="premium" size="sm" onClick={onAIAssistant}>
-            <Sparkles className="h-4 w-4" />
-            AI Assistant
-          </Button>
-          <button
-            onClick={toggleTheme}
-            className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-accent transition-colors"
-            aria-label="Toggle theme"
-          >
-            {resolvedTheme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-          </button>
-          <button
-            onClick={onNotifications}
-            className="relative flex h-8 w-8 items-center justify-center rounded-lg hover:bg-accent transition-colors"
-            aria-label={`Notifications (${notificationCount})`}
-          >
-            <Bell className="h-4 w-4" />
-            {notificationCount > 0 && (
-              <span className="absolute -right-0.5 -top-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-destructive text-[8px] font-bold text-destructive-foreground">
-                {notificationCount}
-              </span>
-            )}
-          </button>
-          <Avatar className="h-8 w-8 cursor-pointer">
-            <AvatarFallback className="bg-primary/10 text-primary text-xs">
-              {userName
-                .split(" ")
-                .map((n) => n[0])
-                .join("")
-                .slice(0, 2)}
-            </AvatarFallback>
-          </Avatar>
-        </div>
+        <h1 className="mt-3 font-display text-[28px] font-bold leading-tight tracking-tight sm:text-[32px]">
+          {greeting}, <span className="text-gradient">{userName}</span>
+        </h1>
+        <p className="mt-1.5 text-[15px] text-muted-foreground">
+          Here&apos;s how <span className="font-medium text-foreground">{organization}</span> is
+          doing today.
+        </p>
+      </div>
+
+      <div className="flex shrink-0 flex-wrap items-center gap-2">
+        <Button variant="outline" asChild className="h-10 rounded-xl">
+          <Link to="/reports/financial">
+            <BarChart3 className="h-4 w-4" /> Reports
+          </Link>
+        </Button>
+        <Button
+          onClick={onAIAssistant}
+          className="shine h-10 rounded-xl px-4 gradient-ai shadow-[0_6px_16px_-6px_rgb(124_92_255/0.6)] hover:brightness-110"
+        >
+          <Sparkles className="h-4 w-4" /> Ask ERPX AI
+        </Button>
       </div>
     </div>
   );

@@ -1,18 +1,20 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useMemo } from "react";
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth";
 import { WelcomeHeader } from "./components/welcome-header";
 import { KPICards } from "./components/kpi-cards";
-import { AIInsightsPanel } from "./components/ai-insights";
 import { ActivityTimeline } from "./components/activity-timeline";
-import { AnalyticsSection } from "./components/analytics-section";
+import { RevenuePerformance, type MonthPoint } from "./components/revenue-performance";
+import { MoneyPosition, type OwnerKpis } from "./components/money-position";
+import { TopProducts, OrderStatus, type NamedValue } from "./components/sales-breakdown";
+import { Highlights, buildHighlights } from "./components/highlights";
 import { QuickActions } from "./components/quick-actions";
 import { PageTransition, StaggerContainer, StaggerItem } from "@/design-system";
-import { formatINR } from "@/lib/format";
+import { formatINR, formatINRCompact } from "@/lib/format";
 import {
   AlertCircle,
   RefreshCw,
@@ -31,8 +33,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useAccess } from "@/hooks/useAccess";
-import { notificationsApi } from "@/lib/api/notifications";
-import type { KPI, AIInsight, TimelineEvent } from "./data";
+import type { KPI, TimelineEvent } from "./data";
 
 interface BackendKPI {
   label: string;
@@ -104,7 +105,7 @@ const KPI_DRILL_FALLBACK: Record<string, string> = {
 
 function formatKpiValue(label: string, value: number): string {
   if (label === "Active Employees" || label === "Employees") return value.toLocaleString("en-IN");
-  return formatINR(value);
+  return formatINRCompact(value);
 }
 
 function formatKpiInsight(label: string, value: number): string {
@@ -130,30 +131,6 @@ function mapKpi(kpi: BackendKPI): KPI {
     insight: formatKpiInsight(kpi.label, kpi.value),
     drillHref: meta.drillHref ?? KPI_DRILL_FALLBACK[id],
   };
-}
-
-function generateInsights(kpis: BackendKPI[]): AIInsight[] {
-  return kpis.map((kpi) => {
-    const isUp = kpi.trend === "up" && kpi.change > 0;
-    const isDown = kpi.trend === "down" && kpi.change > 0;
-    const type: AIInsight["type"] = isUp ? "positive" : isDown ? "warning" : "info";
-    const valueStr = formatKpiValue(kpi.label, kpi.value);
-    return {
-      id: `insight-${kpi.label.toLowerCase().replace(/\s+/g, "-")}`,
-      type,
-      title: isUp
-        ? `${kpi.label} up ${kpi.change}%`
-        : isDown
-          ? `${kpi.label} declined ${kpi.change}%`
-          : `${kpi.label}: ${valueStr}`,
-      description: isUp
-        ? `${kpi.label} is trending upward at ${valueStr}.`
-        : isDown
-          ? `${kpi.label} decreased by ${kpi.change}% to ${valueStr}.`
-          : `${kpi.label} is currently at ${valueStr}.`,
-      action: { label: "View Details" },
-    };
-  });
 }
 
 const EVENT_LABELS: Record<string, string> = {
@@ -231,17 +208,6 @@ function formatRelativeTime(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString();
 }
 
-function deriveChartData(
-  labels: string[],
-  data: number[],
-): { month: string; revenue: number; expenses: number; profit: number }[] {
-  return labels.map((month, i) => {
-    const revenue = data[i] ?? 0;
-    const expenses = Math.round(revenue * 0.6);
-    return { month, revenue, expenses, profit: revenue - expenses };
-  });
-}
-
 // Permission required per executive KPI label (backend /auth/me permissions).
 const KPI_PERMISSION: Record<string, string[]> = {
   Revenue: ["invoice:read", "payment:read"],
@@ -264,6 +230,7 @@ export function DashboardPage() {
   ]);
   const canSeeAudit = access.hasPermission("audit_log:read");
   const canSeeAnalytics = access.canAny(["sales_report:read", "report:read", "invoice:read"]);
+  const canSeeMoney = access.canAny(["report:dashboard", "invoice:read"]);
 
   const {
     data: execData,
@@ -276,6 +243,15 @@ export function DashboardPage() {
       api.get<ExecutiveDashboard>(`/reports/organizations/${orgId}/dashboard/executive`),
     enabled: !!orgId && canSeeKpis,
     retry: 2,
+    staleTime: 30_000,
+    refetchInterval: 60_000,
+  });
+
+  const { data: ownerData } = useQuery({
+    queryKey: ["owner-dashboard", orgId],
+    queryFn: () => api.get<OwnerKpis>(`/reports/organizations/${orgId}/dashboard/owner`),
+    enabled: !!orgId && canSeeKpis && canSeeMoney,
+    retry: 1,
     staleTime: 30_000,
     refetchInterval: 60_000,
   });
@@ -300,37 +276,18 @@ export function DashboardPage() {
     staleTime: 60_000,
   });
 
-  const { data: unreadData } = useQuery({
-    queryKey: ["dashboard-unread", orgId],
-    queryFn: () => notificationsApi.unreadCount(),
-    enabled: !!orgId,
-    refetchInterval: 60_000,
-  });
-
-  const kpis = useMemo<KPI[]>(() => {
-    if (!execData?.kpis?.length) return [];
-    return execData.kpis
-      .filter((kpi) => {
+  const visibleKpis = useMemo<BackendKPI[]>(
+    () =>
+      (execData?.kpis ?? []).filter((kpi) => {
         const perms = KPI_PERMISSION[kpi.label];
-        if (!perms) return true;
-        return perms.some((p) => access.hasPermission(p));
-      })
-      .map(mapKpi);
-  }, [execData, access]);
+        return !perms || perms.some((p) => access.hasPermission(p));
+      }),
+    [execData, access],
+  );
+  const kpis = useMemo<KPI[]>(() => visibleKpis.map(mapKpi), [visibleKpis]);
 
   // No transactions yet → show a setup checklist instead of empty ₹0 KPIs.
   const hasTransactions = useMemo(() => kpis.some((kpi) => Number(kpi.rawValue) > 0), [kpis]);
-
-  const insights = useMemo<AIInsight[]>(() => {
-    if (!execData?.kpis?.length) return [];
-    return generateInsights(
-      execData.kpis.filter((kpi) => {
-        const perms = KPI_PERMISSION[kpi.label];
-        if (!perms) return true;
-        return perms.some((p) => access.hasPermission(p));
-      }),
-    );
-  }, [execData, access]);
 
   const timelineEvents = useMemo<TimelineEvent[]>(() => {
     const logs = Array.isArray(auditData) ? auditData : auditData?.data;
@@ -338,39 +295,24 @@ export function DashboardPage() {
     return logs.slice(0, 7).map(mapAuditLog);
   }, [auditData]);
 
-  const chartData = useMemo(() => {
+  const trend = useMemo<MonthPoint[]>(() => {
     const rt = execData?.charts?.revenueTrend;
-    if (!rt?.labels?.length || !rt?.datasets?.[0]?.data?.length) return null;
-    return deriveChartData(rt.labels, rt.datasets[0].data);
+    const data = rt?.datasets?.[0]?.data ?? [];
+    return (rt?.labels ?? []).map((month, i) => ({ month, value: Number(data[i] ?? 0) }));
   }, [execData]);
 
-  // Real analytics data (no mock). Empty datasets are hidden by the component.
-  // The dashboard endpoints return chart data in { labels, datasets } shape.
-  const analytics = useMemo(() => {
-    const statusChart = salesDashboard?.charts?.salesByStatus;
-    const topChart = salesDashboard?.charts?.topProducts;
+  const toSeries = (chart?: ChartSeries): NamedValue[] => {
+    const labels = Array.isArray(chart?.labels) ? chart.labels : [];
+    const values = chart?.datasets?.[0]?.data ?? [];
+    return labels.map((name, i) => ({ name, value: Number(values[i] ?? 0) }));
+  };
+  const orderStatus = useMemo(() => toSeries(salesDashboard?.charts?.salesByStatus), [salesDashboard]);
+  const topProducts = useMemo(() => toSeries(salesDashboard?.charts?.topProducts), [salesDashboard]);
 
-    const statusLabels = Array.isArray(statusChart?.labels) ? statusChart.labels : [];
-    const statusValues = statusChart?.datasets?.[0]?.data;
-    const salesByCategory = statusLabels.map((name, i) => ({
-      name,
-      value: Array.isArray(statusValues) ? (statusValues[i] ?? 0) : 0,
-    }));
-
-    const topLabels = Array.isArray(topChart?.labels) ? topChart.labels : [];
-    const topValues = topChart?.datasets?.[0]?.data;
-    const weeklySales = topLabels.map((day, i) => ({
-      day,
-      orders: 0,
-      revenue: Array.isArray(topValues) ? (topValues[i] ?? 0) : 0,
-    }));
-
-    return {
-      salesByCategory,
-      weeklySales,
-      customerGrowth: [] as { month: string; customers: number; new: number }[],
-    };
-  }, [salesDashboard]);
+  const highlights = useMemo(
+    () => buildHighlights({ owner: ownerData, trend, topProducts }),
+    [ownerData, trend, topProducts],
+  );
 
   // Permission-filtered quick-create actions.
   const quickActions = useMemo(() => {
@@ -379,59 +321,48 @@ export function DashboardPage() {
     const add = (id: string, label: string, icon: LucideIcon, to: string, perms: string[]) => {
       if (perms.some((p) => can(p))) items.push({ id, label, icon, color: "primary", to });
     };
-    add("invoice", "Create Invoice", ReceiptText, "/sales/invoices", ["invoice:create"]);
-    add("customer", "Add Customer", Users, "/sales/customers", [
+    add("invoice", "Create invoice", ReceiptText, "/sales/invoices", ["invoice:create"]);
+    add("customer", "Add customer", Users, "/sales/customers", [
       "customer:create",
       "company:create",
     ]);
-    add("lead", "Create Lead", UserPlus, "/crm/leads", ["lead:create"]);
-    add("quotation", "Create Quotation", FileText, "/sales/quotations", ["quotation:create"]);
-    add("product", "Add Product", Package, "/inventory/products", ["product:create"]);
-    add("employee", "Create Employee", Briefcase, "/hrms/employees", ["employee:create"]);
-    add("account", "New Account", Scale, "/accounting/chart-of-accounts", [
-      "chart_of_account:create",
-    ]);
-    add("journal", "Journal Entry", FileText, "/accounting/journal-entries", [
+    add("order", "Sales order", ShoppingCart, "/sales/sales-orders", ["sales_order:create"]);
+    add("quotation", "Quotation", FileText, "/sales/quotations", ["quotation:create"]);
+    add("lead", "New lead", UserPlus, "/crm/leads", ["lead:create"]);
+    add("product", "Add product", Package, "/inventory/products", ["product:create"]);
+    add("journal", "Journal entry", Scale, "/accounting/journal-entries", [
       "journal_entry:create",
     ]);
-    add("order", "Sales Order", ShoppingCart, "/sales/sales-orders", ["sales_order:create"]);
-    return items;
+    add("employee", "Add employee", Briefcase, "/hrms/employees", ["employee:create"]);
+    return items.slice(0, 8);
   }, [access]);
 
-  const handleAction = useCallback(
-    (id: string) => {
-      const action = quickActions.find((a) => a.id === id);
-      if (action) {
-        // Navigate handled by QuickActions via window.location for simplicity
-      }
-    },
-    [quickActions],
-  );
+  const ready = canSeeKpis && !execLoading && hasTransactions;
 
   return (
     <PageTransition>
-      <div className="max-w-[1400px] mx-auto">
+      <div className="mx-auto max-w-[1440px] space-y-6">
         <WelcomeHeader
-          userName={user?.firstName ?? "User"}
-          organization={user?.organization?.name ?? "ERPX"}
-          notificationCount={unreadData?.count ?? 0}
+          userName={user?.firstName ?? "there"}
+          organization={user?.organization?.name ?? "your business"}
           onAIAssistant={() => window.dispatchEvent(new Event("erpx:open-ai-copilot"))}
-          onNotifications={() => {}}
         />
-        <StaggerContainer className="space-y-8">
+
+        {canSeeKpis && execError && (
+          <div className="flex items-center gap-2 rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            <span>Couldn&apos;t load dashboard data.</span>
+            <button
+              onClick={() => refetchExec()}
+              className="ml-auto flex items-center gap-1 text-xs font-semibold hover:underline"
+            >
+              <RefreshCw className="h-3 w-3" /> Retry
+            </button>
+          </div>
+        )}
+
+        <StaggerContainer className="space-y-6">
           <StaggerItem>
-            {canSeeKpis && execError && (
-              <div className="mb-4 flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
-                <AlertCircle className="h-4 w-4 shrink-0" />
-                <span>Failed to load dashboard data.</span>
-                <button
-                  onClick={() => refetchExec()}
-                  className="ml-auto flex items-center gap-1 text-xs font-medium hover:underline"
-                >
-                  <RefreshCw className="h-3 w-3" /> Retry
-                </button>
-              </div>
-            )}
             {canSeeKpis ? (
               execLoading ? (
                 <DashboardSkeleton />
@@ -445,41 +376,37 @@ export function DashboardPage() {
             )}
           </StaggerItem>
 
-          {!execLoading && canSeeKpis && hasTransactions && (
+          {ready && (
             <>
               <StaggerItem>
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                  <div className="lg:col-span-2">
-                    <AIInsightsPanel insights={insights} />
+                <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
+                  <div className={ownerData ? "xl:col-span-2" : "xl:col-span-3"}>
+                    <RevenuePerformance points={trend} />
                   </div>
-                  {canSeeAudit && (
-                    <div>
-                      <ActivityTimeline events={timelineEvents} />
-                    </div>
-                  )}
+                  {ownerData && <MoneyPosition data={ownerData} />}
                 </div>
               </StaggerItem>
 
-              {canSeeAnalytics && (
-                <StaggerItem>
-                  <AnalyticsSection
-                    revenueData={chartData ?? []}
-                    salesByCategory={analytics.salesByCategory}
-                    weeklySales={analytics.weeklySales}
-                    customerGrowth={analytics.customerGrowth}
-                  />
-                </StaggerItem>
-              )}
-
-              {quickActions.length > 0 && (
-                <StaggerItem>
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                    <div>
-                      <QuickActions actions={quickActions} onAction={handleAction} />
-                    </div>
+              <StaggerItem>
+                <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 xl:grid-cols-3">
+                  {canSeeAnalytics && <TopProducts items={topProducts} />}
+                  {canSeeAnalytics && <OrderStatus items={orderStatus} />}
+                  <div className="lg:col-span-2 xl:col-span-1">
+                    <Highlights items={highlights} />
                   </div>
-                </StaggerItem>
-              )}
+                </div>
+              </StaggerItem>
+
+              <StaggerItem>
+                <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
+                  {quickActions.length > 0 && (
+                    <div className={canSeeAudit ? "xl:col-span-2" : "xl:col-span-3"}>
+                      <QuickActions actions={quickActions} />
+                    </div>
+                  )}
+                  {canSeeAudit && <ActivityTimeline events={timelineEvents} />}
+                </div>
+              </StaggerItem>
             </>
           )}
         </StaggerContainer>
@@ -517,30 +444,37 @@ const SETUP_STEPS: { title: string; description: string; to: string; icon: Lucid
 
 function SetupChecklist() {
   return (
-    <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
-      <div className="mb-5">
-        <h2 className="text-lg font-semibold tracking-tight">Get set up in a few steps</h2>
+    <div className="relative overflow-hidden rounded-2xl border border-border/80 bg-card p-6 shadow-card sm:p-7">
+      <div className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-primary/10 blur-3xl" />
+      <div className="relative mb-6">
+        <span className="text-label text-primary">Getting started</span>
+        <h2 className="mt-1.5 font-display text-xl font-bold tracking-tight">Get set up in a few steps</h2>
         <p className="mt-1 text-sm text-muted-foreground">
           Your organization has no transactions yet. Complete these steps to get started.
         </p>
       </div>
-      <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        {SETUP_STEPS.map((step) => (
+      <ul className="relative grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {SETUP_STEPS.map((step, i) => (
           <li key={step.title}>
             <Link
               to={step.to as never}
-              className="group flex h-full items-start gap-3 rounded-xl border border-border bg-background p-4 transition-colors hover:border-primary/40 hover:bg-accent/40"
+              className="group flex h-full flex-col gap-4 rounded-xl border border-border/80 bg-gradient-to-b from-card to-muted/40 p-4 transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md"
             >
-              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
-                <step.icon className="h-4 w-4" />
+              <span className="flex items-center justify-between">
+                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl gradient-primary text-white shadow-glow">
+                  <step.icon className="h-[18px] w-[18px]" />
+                </span>
+                <span className="font-mono text-[11px] font-medium text-muted-foreground">0{i + 1}</span>
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block text-sm font-medium">{step.title}</span>
+                <span className="block text-sm font-semibold">{step.title}</span>
                 <span className="mt-0.5 block text-xs text-muted-foreground">
                   {step.description}
                 </span>
               </span>
-              <ArrowUpRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+              <span className="inline-flex items-center gap-1 text-xs font-semibold text-primary">
+                Start <ArrowUpRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+              </span>
             </Link>
           </li>
         ))}
@@ -551,8 +485,8 @@ function SetupChecklist() {
 
 function EmptyDashboard() {
   return (
-    <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-border bg-card px-6 py-16 text-center">
-      <div className="text-base font-semibold">Welcome to ERPX</div>
+    <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-border/80 bg-card px-6 py-16 text-center shadow-card">
+      <div className="font-display text-xl font-bold tracking-tight">Welcome to ERPX</div>
       <p className="max-w-md text-sm text-muted-foreground">
         Mark your attendance and manage your leave below. Company modules appear here once your
         admin gives your account a role with access to them.
@@ -560,13 +494,13 @@ function EmptyDashboard() {
       <div className="mt-2 flex flex-wrap justify-center gap-2">
         <Link
           to="/hrms/my-attendance"
-          className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+          className="inline-flex items-center gap-2 rounded-xl gradient-primary px-4 py-2.5 text-sm font-semibold text-white shadow-glow transition hover:brightness-110"
         >
           <Clock className="h-4 w-4" /> Check in / My Attendance
         </Link>
         <Link
           to="/hrms/my-leave"
-          className="inline-flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted"
+          className="inline-flex items-center gap-2 rounded-2xl border border-border/80 bg-card shadow-card px-4 py-2.5 text-sm font-semibold shadow-xs hover:bg-muted"
         >
           <CalendarDays className="h-4 w-4" /> My Leave
         </Link>
@@ -577,9 +511,10 @@ function EmptyDashboard() {
 
 function DashboardSkeleton() {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
       {Array.from({ length: 5 }).map((_, i) => (
-        <div key={i} className="rounded-xl border border-border bg-card p-5 animate-pulse">
+        <div key={i} className="rounded-2xl border border-border/80 bg-card p-5 shadow-card animate-pulse">
+          <div className="mb-4 h-10 w-10 rounded-xl bg-muted" />
           <div className="h-3 w-20 bg-muted rounded mb-3" />
           <div className="h-7 w-28 bg-muted rounded mb-2" />
           <div className="h-3 w-24 bg-muted rounded" />
